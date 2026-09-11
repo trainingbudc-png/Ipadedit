@@ -99,10 +99,10 @@
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; touch-action: auto; cursor: crosshair; }
         .draft-canvas { pointer-events: none; } 
 
-        /* Floating Actions (Bottom Right) */
+        /* 📍 Floating Actions (Bottom Right) - จัดเรียงแนวตั้ง */
         .floating-actions {
             position: fixed; bottom: 24px; right: 24px; z-index: 1000;
-            display: flex; gap: 12px;
+            display: flex; flex-direction: column; gap: 12px; /* 👈 เปลี่ยนเป็น column */
         }
         .btn-floating {
             width: 54px; height: 54px; border-radius: 27px;
@@ -219,9 +219,11 @@
 
     <!-- Floating Actions (Bottom Right) -->
     <div class="floating-actions">
+        <!-- ปุ่มดูทุกหน้า อยู่ด้านบน -->
         <button class="btn-floating" id="btnFloatingThumbnail" onclick="openThumbnailModal()" title="ดูทุกหน้า" style="display: none;">
             🎛️
         </button>
+        <!-- ปุ่มซ่อนเมนู อยู่ด้านล่าง -->
         <button class="btn-floating" onclick="toggleMenu()" title="ซ่อน/แสดงเมนู">
             <span id="toggleIcon">🔽</span>
         </button>
@@ -350,7 +352,6 @@
         window.initializeWorkspace = function(imageUrls, docId) {
             allPageUrls = imageUrls.split('|').map(url => url.trim()); currentDocId = docId; currentPageIndex = 0;
             
-            // แสดงแถบหน้าและปุ่มลอยดูตัวอย่างหน้าเฉพาะเมื่อมีหลายหน้า
             const showPagination = allPageUrls.length > 1 ? 'flex' : 'none';
             document.getElementById('paginationBar').style.display = showPagination;
             document.getElementById('btnFloatingThumbnail').style.display = showPagination;
