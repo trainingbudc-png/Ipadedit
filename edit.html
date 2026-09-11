@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>พื้นที่ทำแบบฝึกหัด</title>
+    <title>พื้นที่จดบันทึก</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
@@ -93,6 +93,7 @@
         .btn-export.pdf { background: #FF3B30; }
         .btn-export.png { background: var(--primary); }
         .btn-export.jpg { background: #34C759; }
+        .btn-export.original { background: #8E8E93; }
         .btn-export.cancel { background: #F0F0F5; color: var(--text); margin-top: 16px; }
 
         body.dark-theme { background-color: #000000; --bg: #000000; --surface: #1C1C1E; --text: #FFFFFF; --border: #38383A; }
@@ -147,9 +148,10 @@
     <div id="exportModal" class="modal-overlay">
         <div class="modal-content">
             <h3>💾 เลือกรูปแบบไฟล์</h3>
-            <button class="btn-export pdf" onclick="executeDownload('pdf')">📄 PDF (รวมทุกหน้า)</button>
-            <button class="btn-export png" onclick="executeDownload('png')">🖼️ PNG (เฉพาะหน้านี้)</button>
-            <button class="btn-export jpg" onclick="executeDownload('jpg')">📸 JPG (เฉพาะหน้านี้)</button>
+            <button class="btn-export pdf" onclick="executeDownload('pdf')">📄 PDF (รวมทุกหน้าพร้อมลายเส้น)</button>
+            <button class="btn-export png" onclick="executeDownload('png')">🖼️ PNG (เฉพาะหน้านี้พร้อมลายเส้น)</button>
+            <button class="btn-export jpg" onclick="executeDownload('jpg')">📸 JPG (เฉพาะหน้านี้พร้อมลายเส้น)</button>
+            <button class="btn-export original" onclick="downloadOriginal()">📥 โหลดต้นฉบับ (ไฟล์เปล่า)</button>
             <button class="btn-export cancel" onclick="closeExportModal()">ยกเลิก</button>
         </div>
     </div>
@@ -362,6 +364,35 @@
                     link.href = exportCanvas.toDataURL(format === 'jpg' ? 'image/jpeg' : 'image/png', 1.0); link.click();
                 }
             } catch (err) { alert('เกิดข้อผิดพลาดในการ Export'); }
+            btnSave.innerHTML = originalText; isSafeToLeave = false;
+        }
+
+        async function downloadOriginal() {
+            closeExportModal(); isSafeToLeave = true; 
+            const btnSave = document.querySelector('.btn-primary'); const originalText = btnSave.innerHTML;
+            try {
+                if (allPageUrls.length > 1) {
+                    const { jsPDF } = window.jspdf; let pdf;
+                    for (let i = 0; i < allPageUrls.length; i++) {
+                        btnSave.innerHTML = `⏳ ดึงต้นฉบับ (${i + 1}/${allPageUrls.length})...`;
+                        const bgImg = await loadImage(allPageUrls[i]);
+                        const exportCanvas = document.createElement('canvas'); exportCanvas.width = bgImg.naturalWidth; exportCanvas.height = bgImg.naturalHeight;
+                        const ctx = exportCanvas.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height); ctx.drawImage(bgImg, 0, 0);
+                        const imgData = exportCanvas.toDataURL('image/jpeg', 0.85); const orientation = exportCanvas.width > exportCanvas.height ? 'l' : 'p';
+                        if (i === 0) pdf = new jsPDF({ orientation, unit: 'px', format: [exportCanvas.width, exportCanvas.height] });
+                        else pdf.addPage([exportCanvas.width, exportCanvas.height], orientation);
+                        pdf.addImage(imgData, 'JPEG', 0, 0, exportCanvas.width, exportCanvas.height);
+                    }
+                    btnSave.innerHTML = "⏳ ดาวน์โหลด..."; pdf.save('ไฟล์ต้นฉบับ.pdf'); 
+                } else {
+                    btnSave.innerHTML = "⏳ ดึงต้นฉบับ...";
+                    const bgImg = await loadImage(allPageUrls[0]);
+                    const exportCanvas = document.createElement('canvas'); exportCanvas.width = bgImg.naturalWidth; exportCanvas.height = bgImg.naturalHeight;
+                    const ctx = exportCanvas.getContext('2d'); ctx.drawImage(bgImg, 0, 0);
+                    const link = document.createElement('a'); link.download = `ไฟล์ต้นฉบับ.jpg`;
+                    link.href = exportCanvas.toDataURL('image/jpeg', 1.0); link.click();
+                }
+            } catch (err) { alert('เกิดข้อผิดพลาดในการดึงไฟล์ต้นฉบับ'); }
             btnSave.innerHTML = originalText; isSafeToLeave = false;
         }
     </script>
