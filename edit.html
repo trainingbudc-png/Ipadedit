@@ -422,6 +422,15 @@
             } catch (err) { alert('เกิดข้อผิดพลาดในการดึงไฟล์ต้นฉบับ'); }
             btnSave.innerHTML = originalText; isSafeToLeave = false;
         }
+
+        // --- 🛑 ระบบกันสันมือลั่น (Strict Palm Rejection) ---
+        document.addEventListener('touchmove', function(e) {
+            if (e.target.closest('#workspace') && e.touches.length === 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        // ----------------------------------------------------
+
     </script>
 </body>
 </html>
