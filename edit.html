@@ -82,7 +82,7 @@
             border-radius: 8px; overflow: hidden; 
         }
         .bg-img { width: 100%; display: block; user-select: none; pointer-events: none; }
-        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; touch-action: auto; cursor: crosshair; }
         .draft-canvas { pointer-events: none; } 
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
@@ -278,20 +278,38 @@
         }
 
         function setupDrawingSystem(canvas, draftCanvas, pageIndex) {
-            const ctx = canvas.getContext('2d', { willReadFrequently: true }); const draftCtx = draftCanvas.getContext('2d', { willReadFrequently: true }); 
+            const ctx = canvas.getContext('2d', { willReadFrequently: true }); 
+            const draftCtx = draftCanvas.getContext('2d', { willReadFrequently: true }); 
             let isDrawing = false, lastX = 0, lastY = 0;
+            
             function getPos(clientX, clientY) {
-                const rect = canvas.getBoundingClientRect(); return { x: (clientX - rect.left) * (canvas.width / rect.width), y: (clientY - rect.top) * (canvas.height / rect.height) };
+                const rect = canvas.getBoundingClientRect(); 
+                return { 
+                    x: (clientX - rect.left) * (canvas.width / rect.width), 
+                    y: (clientY - rect.top) * (canvas.height / rect.height) 
+                };
             }
+            
             canvas.addEventListener('pointerdown', (e) => {
-                e.preventDefault(); const pos = getPos(e.clientX, e.clientY);
+                if (e.pointerType === 'touch') return; 
+                
+                e.preventDefault(); 
+                const pos = getPos(e.clientX, e.clientY);
                 globalUndoStack.push({ index: pageIndex, imageData: ctx.getImageData(0, 0, canvas.width, canvas.height) });
-                if (globalUndoStack.length > 50) globalUndoStack.shift(); globalRedoStack = [];
-                isDrawing = true; lastX = pos.x; lastY = pos.y; draftCanvas.style.opacity = (currentTool === 'highlighter') ? (currentOpacity * 0.4) : currentOpacity;
+                if (globalUndoStack.length > 50) globalUndoStack.shift(); 
+                globalRedoStack = [];
+                isDrawing = true; 
+                lastX = pos.x; lastY = pos.y; 
+                draftCanvas.style.opacity = (currentTool === 'highlighter') ? (currentOpacity * 0.4) : currentOpacity;
             });
+            
             canvas.addEventListener('pointermove', (e) => {
-                if (!isDrawing) return; e.preventDefault();
-                const pos = getPos(e.clientX, e.clientY); let pressure = e.pointerType === 'pen' && e.pressure > 0 ? e.pressure : 0.5;
+                if (!isDrawing || e.pointerType === 'touch') return; 
+                e.preventDefault();
+                
+                const pos = getPos(e.clientX, e.clientY); 
+                let pressure = e.pointerType === 'pen' && e.pressure > 0 ? e.pressure : 0.5;
+                
                 if (currentTool === 'eraser') {
                     ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.globalCompositeOperation = 'destination-out';
                     ctx.globalAlpha = 1.0; ctx.lineWidth = currentSize * 6;
@@ -304,16 +322,25 @@
                 }
                 lastX = pos.x; lastY = pos.y;
             });
-            function stopAction() {
+            
+            function stopAction(e) {
+                if (e && e.pointerType === 'touch') return;
+                
                 if (isDrawing) {
                     if (currentTool !== 'eraser') {
-                        ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = currentTool === 'highlighter' ? currentOpacity * 0.4 : currentOpacity;
-                        ctx.drawImage(draftCanvas, 0, 0); draftCtx.clearRect(0, 0, draftCanvas.width, draftCanvas.height);
+                        ctx.globalCompositeOperation = 'source-over'; 
+                        ctx.globalAlpha = currentTool === 'highlighter' ? currentOpacity * 0.4 : currentOpacity;
+                        ctx.drawImage(draftCanvas, 0, 0); 
+                        draftCtx.clearRect(0, 0, draftCanvas.width, draftCanvas.height);
                     }
-                    isDrawing = false; saveCurrentCanvasAsync();
+                    isDrawing = false; 
+                    saveCurrentCanvasAsync();
                 }
             }
-            canvas.addEventListener('pointerup', stopAction); canvas.addEventListener('pointerleave', stopAction); canvas.addEventListener('pointercancel', stopAction);
+            
+            canvas.addEventListener('pointerup', stopAction); 
+            canvas.addEventListener('pointerleave', stopAction); 
+            canvas.addEventListener('pointercancel', stopAction);
         }
 
         async function clearDraft() {
