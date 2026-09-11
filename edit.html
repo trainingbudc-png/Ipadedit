@@ -86,7 +86,8 @@
         input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.2); }
 
         /* Pagination */
-        #pageIndicator { font-size: 15px; font-weight: 600; color: var(--text); min-width: 50px; text-align: center; cursor: pointer; }
+        #pageIndicator { font-size: 15px; font-weight: 600; color: var(--text); min-width: 50px; text-align: center; cursor: pointer; padding: 0 8px; border-radius: 12px;}
+        #pageIndicator:active { background: #E5E5EA; }
 
         /* Workspace */
         #workspace { width: 100%; max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;}
@@ -98,16 +99,19 @@
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; touch-action: auto; cursor: crosshair; }
         .draft-canvas { pointer-events: none; } 
 
-        /* Floating Menu Toggle Button */
-        .btn-toggle-menu {
+        /* Floating Actions (Bottom Right) */
+        .floating-actions {
             position: fixed; bottom: 24px; right: 24px; z-index: 1000;
+            display: flex; gap: 12px;
+        }
+        .btn-floating {
             width: 54px; height: 54px; border-radius: 27px;
             background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
             border: 1px solid var(--border); box-shadow: 0 8px 24px rgba(0,0,0,0.12);
             font-size: 24px; display: flex; justify-content: center; align-items: center;
             cursor: pointer; transition: 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        .btn-toggle-menu:active { transform: scale(0.85); }
+        .btn-floating:active { transform: scale(0.85); }
 
         /* Modals */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
@@ -143,7 +147,7 @@
         body.dark-theme .tool-btn.active { background: #3A3A3C; color: #0A84FF; }
         body.dark-theme input[type="range"] { background: rgba(255,255,255,0.2); }
         body.dark-theme .canvas-wrapper { box-shadow: 0 12px 48px rgba(0,0,0,0.6); }
-        body.dark-theme .btn-toggle-menu { background: rgba(44, 44, 46, 0.9); border-color: rgba(255,255,255,0.1); color: #fff; }
+        body.dark-theme .btn-floating { background: rgba(44, 44, 46, 0.9); border-color: rgba(255,255,255,0.1); color: #fff; }
         body.dark-theme .thumbnail-item { background: #2C2C2E; }
         body.dark-theme .thumbnail-page-num { background: #1C1C1E; color: #fff; border-color: #38383A; }
     </style>
@@ -161,7 +165,6 @@
 
             <!-- Pagination Group -->
             <div class="tool-group" id="paginationBar" style="display: none;">
-                <button class="btn-action" onclick="openThumbnailModal()" title="ดูทุกหน้า">🎛️</button>
                 <button class="btn-action" id="btnPrevPage" onclick="prevPage()">◀</button>
                 <span id="pageIndicator" onclick="promptJumpPage()" title="แตะเพื่อข้ามหน้า">1 / 1</span>
                 <button class="btn-action" id="btnNextPage" onclick="nextPage()">▶</button>
@@ -214,10 +217,15 @@
         </div>
     </div>
 
-    <!-- Toggle Button -->
-    <button class="btn-toggle-menu" onclick="toggleMenu()" title="ซ่อน/แสดงเมนู">
-        <span id="toggleIcon">🔽</span>
-    </button>
+    <!-- Floating Actions (Bottom Right) -->
+    <div class="floating-actions">
+        <button class="btn-floating" id="btnFloatingThumbnail" onclick="openThumbnailModal()" title="ดูทุกหน้า" style="display: none;">
+            🎛️
+        </button>
+        <button class="btn-floating" onclick="toggleMenu()" title="ซ่อน/แสดงเมนู">
+            <span id="toggleIcon">🔽</span>
+        </button>
+    </div>
 
     <div id="workspace"></div>
 
@@ -310,15 +318,11 @@
             else document.getElementById(tool === 'highlighter' ? 'btnHighlighter' : 'btnPen').classList.add('active');
         }
 
-        // ฟังก์ชันจัดการจุดสี (Quick Colors)
         window.setColor = function(color, element) {
             currentColor = color;
             document.querySelectorAll('.color-dot, .color-picker-wrapper').forEach(b => b.classList.remove('active'));
             if(element) element.classList.add('active');
-            // ถ้าเลือกสีตอนที่ใช้ยางลบอยู่ ให้เด้งกลับไปเป็นปากกาอัตโนมัติ
-            if(currentTool === 'eraser') {
-                setTool('pen', document.getElementById('btnPen'));
-            }
+            if(currentTool === 'eraser') setTool('pen', document.getElementById('btnPen'));
         }
 
         function undo() {
@@ -345,7 +349,12 @@
 
         window.initializeWorkspace = function(imageUrls, docId) {
             allPageUrls = imageUrls.split('|').map(url => url.trim()); currentDocId = docId; currentPageIndex = 0;
-            document.getElementById('paginationBar').style.display = allPageUrls.length > 1 ? 'flex' : 'none';
+            
+            // แสดงแถบหน้าและปุ่มลอยดูตัวอย่างหน้าเฉพาะเมื่อมีหลายหน้า
+            const showPagination = allPageUrls.length > 1 ? 'flex' : 'none';
+            document.getElementById('paginationBar').style.display = showPagination;
+            document.getElementById('btnFloatingThumbnail').style.display = showPagination;
+            
             renderCurrentPage();
         };
 
@@ -464,7 +473,6 @@
             }
         }
 
-        // --- Thumbnail & Navigation ---
         window.openThumbnailModal = function() {
             const grid = document.getElementById('thumbnailGrid');
             grid.innerHTML = '';
