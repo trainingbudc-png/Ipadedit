@@ -41,7 +41,8 @@
         }
         .btn-page:active:not(:disabled) { transform: scale(0.9); }
         .btn-page:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
-        #pageIndicator { font-size: 15px; font-weight: 600; color: var(--text); min-width: 60px; text-align: center; }
+        #pageIndicator { font-size: 15px; font-weight: 600; color: var(--text); min-width: 60px; text-align: center; cursor: pointer; padding: 0 8px; border-radius: 12px; transition: 0.2s; }
+        #pageIndicator:active { background: #E5E5EA; }
 
         .bottom-row { 
             display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap; 
@@ -97,7 +98,7 @@
         .btn-toggle-menu:active { transform: scale(0.9); }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-        .modal-content { background: var(--surface); padding: 32px; border-radius: 24px; width: 90%; max-width: 380px; box-shadow: 0 24px 48px rgba(0,0,0,0.2); text-align: center; }
+        .modal-content { background: var(--surface); padding: 32px; border-radius: 24px; width: 90%; max-width: 380px; box-shadow: 0 24px 48px rgba(0,0,0,0.2); text-align: center; display: flex; flex-direction: column; }
         .modal-content h3 { margin: 0 0 24px; font-size: 22px; }
         .btn-export { display: block; width: 100%; padding: 16px; margin-bottom: 12px; font-size: 17px; font-weight: 600; border-radius: 16px; color: white; border: none; cursor: pointer; transition: 0.2s;}
         .btn-export:active { transform: scale(0.96); }
@@ -107,6 +108,20 @@
         .btn-export.original { background: #8E8E93; }
         .btn-export.cancel { background: #F0F0F5; color: var(--text); margin-top: 16px; }
 
+        /* สไตล์สำหรับระบบ Thumbnail */
+        #thumbnailModal .modal-content { max-width: 800px; width: 90%; max-height: 85vh; padding: 24px; }
+        .thumbnail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .thumbnail-header h3 { margin: 0; font-size: 20px; }
+        .btn-close-modal { background: #F0F0F5; border: none; width: 36px; height: 36px; border-radius: 18px; font-size: 16px; cursor: pointer; color: #555; transition: 0.2s;}
+        .btn-close-modal:active { transform: scale(0.9); }
+        .thumbnail-grid-container { overflow-y: auto; flex: 1; padding: 4px; }
+        .thumbnail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 16px; }
+        .thumbnail-item { cursor: pointer; border-radius: 12px; overflow: hidden; border: 3px solid transparent; transition: 0.2s; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .thumbnail-item:active { transform: scale(0.95); }
+        .thumbnail-item.active { border-color: var(--primary); }
+        .thumbnail-item img { width: 100%; display: block; object-fit: cover; height: 140px; background: #f9f9f9; }
+        .thumbnail-page-num { padding: 8px; font-size: 14px; font-weight: 600; background: #fafafa; border-top: 1px solid #eee; color: #555; text-align: center;}
+
         body.dark-theme { background-color: #000000; --bg: #000000; --surface: #1C1C1E; --text: #FFFFFF; --border: #38383A; }
         body.dark-theme .header-tools { background: rgba(28, 28, 30, 0.85); border-color: rgba(255,255,255,0.1); }
         body.dark-theme .bottom-row, body.dark-theme .pagination-center, body.dark-theme .btn-action { background: #2C2C2E; color: #fff; }
@@ -114,6 +129,10 @@
         body.dark-theme .tool-btn.active { background: #3A3A3C; color: #0A84FF; }
         body.dark-theme .canvas-wrapper { box-shadow: 0 12px 48px rgba(0,0,0,0.6); }
         body.dark-theme .btn-toggle-menu { background: rgba(44, 44, 46, 0.9); border-color: rgba(255,255,255,0.1); color: #fff; }
+        body.dark-theme #pageIndicator:active { background: #38383A; }
+        body.dark-theme .thumbnail-item { background: #2C2C2E; }
+        body.dark-theme .thumbnail-page-num { background: #1C1C1E; color: #fff; border-color: #38383A; }
+        body.dark-theme .btn-close-modal { background: #38383A; color: #fff; }
     </style>
 </head>
 <body>
@@ -127,8 +146,9 @@
             </div>
 
             <div class="pagination-center" id="paginationBar" style="display: none;">
+                <button class="btn-page" onclick="openThumbnailModal()" title="เปิดตารางดูทุกหน้า">🎛️</button>
                 <button class="btn-page" id="btnPrevPage" onclick="prevPage()">◀</button>
-                <span id="pageIndicator">1 / 1</span>
+                <span id="pageIndicator" onclick="promptJumpPage()" title="แตะเพื่อพิมพ์เลขหน้า">1 / 1</span>
                 <button class="btn-page" id="btnNextPage" onclick="nextPage()">▶</button>
             </div>
 
@@ -155,13 +175,13 @@
         </div>
     </div>
 
-    <!-- ปุ่มซ่อน/แสดงเมนู มุมขวาล่าง -->
     <button class="btn-toggle-menu" onclick="toggleMenu()" title="ซ่อน/แสดงเมนู">
         <span id="toggleIcon">🔽</span>
     </button>
 
     <div id="workspace"></div>
 
+    <!-- หน้าต่างส่งออกไฟล์ -->
     <div id="exportModal" class="modal-overlay">
         <div class="modal-content">
             <h3>💾 เลือกรูปแบบไฟล์</h3>
@@ -170,6 +190,19 @@
             <button class="btn-export jpg" onclick="executeDownload('jpg')">📸 JPG (เฉพาะหน้านี้พร้อมลายเส้น)</button>
             <button class="btn-export original" onclick="downloadOriginal()">📥 โหลดต้นฉบับ (ไฟล์เปล่า)</button>
             <button class="btn-export cancel" onclick="closeExportModal()">ยกเลิก</button>
+        </div>
+    </div>
+
+    <!-- หน้าต่างดูภาพรวมทุกหน้า (Thumbnail Grid) -->
+    <div id="thumbnailModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="thumbnail-header">
+                <h3>🎛️ เลือกหน้า</h3>
+                <button class="btn-close-modal" onclick="closeThumbnailModal()">✕</button>
+            </div>
+            <div class="thumbnail-grid-container">
+                <div class="thumbnail-grid" id="thumbnailGrid"></div>
+            </div>
         </div>
     </div>
 
@@ -219,10 +252,10 @@
             const icon = document.getElementById('toggleIcon');
             if (isMenuHidden) {
                 menu.classList.add('hidden');
-                icon.innerText = '🛠️'; // เปลี่ยนเป็นไอคอนเครื่องมือตอนซ่อนเมนู
+                icon.innerText = '🛠️';
             } else {
                 menu.classList.remove('hidden');
-                icon.innerText = '🔽'; // เปลี่ยนกลับตอนแสดงเมนู
+                icon.innerText = '🔽';
             }
         }
 
@@ -323,7 +356,6 @@
             
             canvas.addEventListener('pointerdown', (e) => {
                 if (e.pointerType === 'touch') return; 
-                
                 e.preventDefault(); 
                 const pos = getPos(e.clientX, e.clientY);
                 globalUndoStack.push({ index: pageIndex, imageData: ctx.getImageData(0, 0, canvas.width, canvas.height) });
@@ -337,10 +369,8 @@
             canvas.addEventListener('pointermove', (e) => {
                 if (!isDrawing || e.pointerType === 'touch') return; 
                 e.preventDefault();
-                
                 const pos = getPos(e.clientX, e.clientY); 
                 let pressure = e.pointerType === 'pen' && e.pressure > 0 ? e.pressure : 0.5;
-                
                 if (currentTool === 'eraser') {
                     ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.globalCompositeOperation = 'destination-out';
                     ctx.globalAlpha = 1.0; ctx.lineWidth = currentSize * 6;
@@ -356,7 +386,6 @@
             
             function stopAction(e) {
                 if (e && e.pointerType === 'touch') return;
-                
                 if (isDrawing) {
                     if (currentTool !== 'eraser') {
                         ctx.globalCompositeOperation = 'source-over'; 
@@ -381,6 +410,44 @@
                     const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, canvas.width, canvas.height); 
                     await localforage.removeItem(`draft_${currentDocId}_page_${currentPageIndex}`); 
                     globalUndoStack = [{ index: currentPageIndex, imageData: ctx.getImageData(0,0,canvas.width,canvas.height) }]; globalRedoStack = [];
+                }
+            }
+        }
+
+        // --- ระบบ Thumbnail Grid & Jump to Page ---
+        function openThumbnailModal() {
+            const grid = document.getElementById('thumbnailGrid');
+            grid.innerHTML = '';
+            allPageUrls.forEach((url, index) => {
+                const div = document.createElement('div');
+                div.className = `thumbnail-item ${index === currentPageIndex ? 'active' : ''}`;
+                div.onclick = async () => {
+                    closeThumbnailModal();
+                    if (index !== currentPageIndex) {
+                        await saveCurrentCanvasAsync();
+                        currentPageIndex = index;
+                        renderCurrentPage();
+                    }
+                };
+                div.innerHTML = `<img src="${url}" loading="lazy"><div class="thumbnail-page-num">หน้า ${index + 1}</div>`;
+                grid.appendChild(div);
+            });
+            document.getElementById('thumbnailModal').style.display = 'flex';
+        }
+
+        function closeThumbnailModal() { 
+            document.getElementById('thumbnailModal').style.display = 'none'; 
+        }
+
+        function promptJumpPage() {
+            const page = prompt(`ไปที่หน้า (1 - ${allPageUrls.length}):`, currentPageIndex + 1);
+            if (page) {
+                const target = parseInt(page) - 1;
+                if (target >= 0 && target < allPageUrls.length && target !== currentPageIndex) {
+                    saveCurrentCanvasAsync().then(() => {
+                        currentPageIndex = target;
+                        renderCurrentPage();
+                    });
                 }
             }
         }
