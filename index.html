@@ -2,95 +2,76 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>เลือกกระดานวาดรูป</title>
     <style>
         :root {
-            --primary: #007AFF;
-            --bg: #F4F5F7;
-            --text: #1D1D1F;
-            --card-bg: #FFFFFF;
+            --system-blue: #007AFF; --system-bg: #F2F2F7; --system-surface: #FFFFFF;
+            --text-primary: #1C1C1E; --text-secondary: #8E8E93; --border: #E5E5EA;
+            --radius-lg: 16px; --radius-md: 12px;
         }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 20px 30px;
-            text-align: center;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+            background-color: var(--system-bg); color: var(--text-primary);
+            margin: 0; padding: env(safe-area-inset-top) 24px 40px;
             -webkit-font-smoothing: antialiased;
         }
         
-        /* ปุ่มแอดมินแบบเห็นชัดเจน */
-        .top-bar { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+        .top-bar { display: flex; justify-content: flex-end; padding: 16px 0; }
         .btn-admin-visible {
-            background-color: #E5E5EA; color: var(--text); border: none;
-            padding: 10px 16px; border-radius: 8px; font-size: 14px; font-weight: bold;
-            cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 5px;
+            background: var(--system-surface); color: var(--system-blue); border: 1px solid var(--border);
+            padding: 10px 20px; border-radius: 24px; font-size: 15px; font-weight: 600;
+            cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: 0.2s; min-height: 44px;
         }
-        .btn-admin-visible:hover { background-color: #D1D1D6; }
-        .btn-admin-visible:active { transform: scale(0.95); }
+        .btn-admin-visible:active { transform: scale(0.96); background: var(--system-blue); color: #fff; }
 
-        h1 { font-size: 28px; margin-top: 0; margin-bottom: 20px; user-select: none; }
+        h1 { text-align: center; font-size: 32px; font-weight: 700; margin: 10px 0 30px; letter-spacing: -0.5px; }
         
-        .search-container { margin: 20px auto 40px; max-width: 500px; position: relative; }
+        .search-container { max-width: 600px; margin: 0 auto 40px; position: relative; }
         .search-input {
-            width: 100%; padding: 16px 20px; font-size: 16px; border: 2px solid #D1D1D6;
-            border-radius: 12px; box-sizing: border-box; outline: none; transition: 0.2s;
-            background: var(--card-bg);
+            width: 100%; padding: 16px 20px 16px 48px; font-size: 17px; border: none;
+            border-radius: var(--radius-md); background: var(--system-surface);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04); outline: none; transition: 0.2s;
         }
-        .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2); }
+        .search-input:focus { box-shadow: 0 0 0 3px rgba(0,122,255,0.3); }
+        .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 20px; opacity: 0.5; }
         
-        .gallery { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
-            gap: 24px; 
-            max-width: 1000px; 
-            margin: 0 auto; 
-        }
+        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 24px; max-width: 1100px; margin: 0 auto; }
         .card {
-            background: var(--card-bg); border-radius: 16px; padding: 15px; cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: 0.2s; border: 2px solid transparent;
+            background: var(--system-surface); border-radius: var(--radius-lg); padding: 16px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.04); border: 1px solid var(--border);
+            cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
         }
-        .card:hover, .card:active { transform: translateY(-3px); border-color: var(--primary); }
-        .card img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; margin-bottom: 12px; background: #eee; }
-        .card p { margin: 0; font-size: 16px; font-weight: 600; color: var(--text); }
+        .card:active { transform: scale(0.97); box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .card img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius-md); margin-bottom: 16px; background: #fafafa; }
+        .card p { margin: 0; font-size: 17px; font-weight: 600; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         
-        .modal-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 100; justify-content: center; align-items: center; 
-            backdrop-filter: blur(4px);
-        }
-        .modal-content {
-            background: white; padding: 30px; border-radius: 16px; width: 90%; max-width: 400px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: left;
-        }
-        .modal-content h2 { margin-top: 0; text-align: center; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; }
-        .form-group input {
-            width: 100%; padding: 14px; font-size: 16px; border: 1px solid #ccc;
-            border-radius: 8px; box-sizing: border-box; outline: none;
-        }
-        .form-group input:focus { border-color: var(--primary); }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        .modal-content { background: var(--system-surface); padding: 32px; border-radius: 24px; width: 90%; max-width: 400px; box-shadow: 0 24px 48px rgba(0,0,0,0.2); }
+        .modal-content h2 { margin: 0 0 24px; text-align: center; font-size: 24px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: var(--text-secondary); }
+        .form-group input { width: 100%; padding: 14px 16px; font-size: 16px; border: 1px solid var(--border); border-radius: var(--radius-md); outline: none; background: #fafafa; }
+        .form-group input:focus { border-color: var(--system-blue); background: #fff; }
         
-        .btn {
-            width: 100%; padding: 16px; font-size: 16px; font-weight: bold; border-radius: 8px;
-            border: none; cursor: pointer; transition: 0.2s; margin-top: 10px;
-        }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:active { transform: scale(0.98); }
-        .btn-cancel { background: #E5E5EA; color: var(--text); margin-top: 10px; }
-        .error-text { color: #FF3B30; font-size: 14px; margin-top: 10px; display: none; text-align: center;}
+        .btn { width: 100%; padding: 16px; font-size: 17px; font-weight: 600; border-radius: var(--radius-md); border: none; cursor: pointer; transition: 0.2s; min-height: 50px; }
+        .btn-primary { background: var(--system-blue); color: white; margin-bottom: 12px; }
+        .btn-primary:active { transform: scale(0.98); opacity: 0.9; }
+        .btn-cancel { background: #E5E5EA; color: var(--text-primary); }
+        .btn-cancel:active { background: #D1D1D6; }
+        .error-text { color: #FF3B30; font-size: 14px; margin-bottom: 16px; display: none; text-align: center; }
         
         #adminBanner { 
-            display: none; background: #34C759; color: white; padding: 12px; 
-            border-radius: 8px; margin-bottom: 20px; font-weight: bold; max-width: 500px; margin: 0 auto 20px;
+            display: none; background: #E4F8EB; border: 1px solid #34C759; color: #248A3D; 
+            padding: 16px 24px; border-radius: var(--radius-lg); margin: 0 auto 30px; font-weight: 600; 
+            max-width: 600px; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(52, 199, 89, 0.1);
         }
-        #adminBanner button { 
-            background: white; color: #34C759; border: none; padding: 8px 16px; 
-            border-radius: 20px; font-weight: bold; cursor: pointer; margin-left: 10px; 
-        }
+        .admin-actions { display: flex; gap: 8px; }
+        .admin-actions button { background: white; border: 1px solid #34C759; color: #34C759; padding: 10px 16px; border-radius: 20px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .admin-actions button:active { transform: scale(0.95); }
+        .admin-actions button.logout { border-color: #FF3B30; color: #FF3B30; }
     </style>
 </head>
 <body>
@@ -102,17 +83,20 @@
     <h1>📖 เลือกรูปภาพ/แบบฝึกหัด</h1>
     
     <div id="adminBanner">
-        🔒 คุณอยู่ในระบบแอดมิน 
-        <button onclick="window.location.href='admin.html'">จัดการรูปภาพ</button>
-        <button onclick="logout()" style="color: #FF3B30;">ออกจากระบบ</button>
+        <span>🔒 คุณอยู่ในระบบแอดมิน</span>
+        <div class="admin-actions">
+            <button onclick="window.location.href='admin.html'">จัดการรูปภาพ</button>
+            <button class="logout" onclick="logout()">ออกจากระบบ</button>
+        </div>
     </div>
 
     <div class="search-container">
-        <input type="text" id="searchInput" class="search-input" placeholder="🔍 ค้นหาชื่อรูปภาพ..." aria-label="ค้นหาชื่อรูปภาพ">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" class="search-input" placeholder="ค้นหาชื่อรูปภาพ..." aria-label="ค้นหาชื่อรูปภาพ">
     </div>
 
     <div class="gallery" id="gallery">
-        <p style="grid-column: 1 / -1; color: #86868b; font-size: 18px;">⏳ กำลังโหลดข้อมูล...</p>
+        <p style="grid-column: 1 / -1; color: #8E8E93; font-size: 18px; text-align: center;">⏳ กำลังโหลดข้อมูล...</p>
     </div>
 
     <div class="modal-overlay" id="adminModal">
@@ -132,7 +116,6 @@
         </div>
     </div>
 
-    <!-- Scripts -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
         import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
@@ -158,27 +141,18 @@
         const btnCancel = document.getElementById('btnCancel');
         const btnLogin = document.getElementById('btnLogin');
         const adminBanner = document.getElementById('adminBanner');
-        
         let allItems = [];
 
-        // เปิดหน้าต่าง Modal เมื่อกดปุ่มจัดการระบบ
-        adminTrigger.addEventListener('click', () => {
-            adminModal.style.display = 'flex';
-        });
-
-        // ปิดหน้าต่าง Modal
+        adminTrigger.addEventListener('click', () => adminModal.style.display = 'flex');
         btnCancel.addEventListener('click', () => {
             adminModal.style.display = 'none';
             document.getElementById('loginError').style.display = 'none';
         });
 
-        // ล็อกอิน
         btnLogin.addEventListener('click', async () => {
             const email = document.getElementById('adminEmail').value;
             const password = document.getElementById('adminPassword').value;
-            
             if(!email || !password) return;
-            
             btnLogin.textContent = "กำลังตรวจสอบ...";
             try {
                 await signInWithEmailAndPassword(auth, email, password);
@@ -190,11 +164,10 @@
             }
         });
 
-        // เช็คสถานะ
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                adminBanner.style.display = 'block';
-                adminTrigger.style.display = 'none'; // ซ่อนปุ่มเข้าสู่ระบบถ้าล็อกอินแล้ว
+                adminBanner.style.display = 'flex';
+                adminTrigger.style.display = 'none';
             } else {
                 adminBanner.style.display = 'none';
                 adminTrigger.style.display = 'flex';
@@ -206,48 +179,36 @@
             window.location.reload();
         };
 
-        // โหลดข้อมูลภาพ
         async function fetchGallery() {
             try {
                 const q = query(collection(db, "workbooks"), orderBy("createdAt", "desc"));
                 const querySnapshot = await getDocs(q);
-                
-                querySnapshot.forEach((doc) => {
-                    allItems.push({ id: doc.id, ...doc.data() });
-                });
+                querySnapshot.forEach((doc) => allItems.push({ id: doc.id, ...doc.data() }));
                 renderGallery(allItems);
             } catch (error) {
-                console.error("Error fetching documents: ", error);
-                galleryDiv.innerHTML = '<p style="grid-column: 1 / -1; color: #FF3B30;">❌ ไม่สามารถเชื่อมต่อฐานข้อมูลได้</p>';
+                galleryDiv.innerHTML = '<p style="grid-column: 1 / -1; color: #FF3B30; text-align: center;">❌ ไม่สามารถเชื่อมต่อฐานข้อมูลได้</p>';
             }
         }
 
         function renderGallery(items) {
             galleryDiv.innerHTML = '';
             if(items.length === 0) {
-                galleryDiv.innerHTML = '<p style="grid-column: 1 / -1; color: #86868b; font-size: 16px;">ยังไม่มีรูปภาพในระบบ</p>';
+                galleryDiv.innerHTML = '<p style="grid-column: 1 / -1; color: #8E8E93; font-size: 16px; text-align: center;">ยังไม่มีรูปภาพในระบบ</p>';
                 return;
             }
-
             items.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'card';
                 card.onclick = () => window.location.href = `edit.html?id=${item.id}`;
-                
                 const coverImg = item.url.includes('|') ? item.url.split('|')[0] : item.url; 
-
-                card.innerHTML = `
-                    <img src="${coverImg}" alt="${item.name}" loading="lazy">
-                    <p>${item.name}</p>
-                `;
+                card.innerHTML = `<img src="${coverImg}" alt="${item.name}" loading="lazy"><p>${item.name}</p>`;
                 galleryDiv.appendChild(card);
             });
         }
 
         searchInput.addEventListener('input', (e) => {
             const keyword = e.target.value.toLowerCase();
-            const filtered = allItems.filter(item => item.name.toLowerCase().includes(keyword));
-            renderGallery(filtered);
+            renderGallery(allItems.filter(item => item.name.toLowerCase().includes(keyword)));
         });
 
         fetchGallery();
