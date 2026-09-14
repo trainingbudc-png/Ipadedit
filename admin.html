@@ -3,65 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>จัดการระบบ (Admin)</title>
+    <title>จัดการระบบ</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';</script>
     <style>
-        :root { --primary: #007AFF; --danger: #FF3B30; --bg: #F2F2F7; --surface: #FFFFFF; --text: #1C1C1E; --border: #E5E5EA; --radius: 16px; }
+        :root { --primary: #007AFF; --danger: #FF3B30; --bg: #F5F5F7; --surface: #FFFFFF; --text-main: #1D1D1F; --text-muted: #86868B; --border: #E5E5EA; --radius: 16px; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; }
-        body { background-color: var(--bg); margin: 0; padding: env(safe-area-inset-top) 24px 40px; color: var(--text); -webkit-font-smoothing: antialiased; }
+        body { background-color: var(--bg); margin: 0; padding: env(safe-area-inset-top) 24px 5%; color: var(--text-main); -webkit-font-smoothing: antialiased; }
         
-        .container { max-width: 700px; margin: 0 auto; display: none; }
+        #pageLoader { position: fixed; inset: 0; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 1000; font-size: 16px; font-weight: 600; color: var(--text-muted); }
+        .container { max-width: 800px; margin: 0 auto; display: none; padding-bottom: 40px; }
         
-        .header-bar { display: flex; align-items: center; margin-bottom: 32px; gap: 16px; margin-top: 16px; }
-        .btn-back { 
-            display: inline-flex; align-items: center; justify-content: center; background: var(--surface); color: var(--primary); 
-            border: 1px solid var(--border); width: 44px; height: 44px; border-radius: 50%; font-size: 20px; 
-            cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: 0.2s; text-decoration: none;
-        }
+        .header-bar { display: flex; align-items: center; gap: 16px; margin: 16px 0 32px; }
+        .btn-back { display: flex; align-items: center; justify-content: center; background: var(--surface); color: var(--primary); border: 1px solid var(--border); width: 44px; height: 44px; border-radius: 50%; font-size: 20px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: 0.2s; text-decoration: none; }
         .btn-back:active { transform: scale(0.92); }
         .page-title { font-size: 28px; font-weight: 700; margin: 0; }
 
-        .card { background: var(--surface); border-radius: 24px; padding: 32px; box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04); margin-bottom: 24px; }
-        .section-header { margin-bottom: 24px; }
-        .section-header h2 { margin: 0 0 8px 0; font-size: 22px; }
-        .section-header p { margin: 0; color: #8E8E93; font-size: 15px; }
+        .card { background: var(--surface); border-radius: 24px; padding: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid var(--border); margin-bottom: 24px; }
+        .card-header { margin-bottom: 24px; }
+        .card-header h2 { margin: 0 0 8px 0; font-size: 20px; font-weight: 600; }
+        .card-header p { margin: 0; color: var(--text-muted); font-size: 14px; }
 
-        input[type="text"] { 
-            width: 100%; padding: 16px 20px; border: 1px solid var(--border); border-radius: 12px; 
-            font-size: 16px; outline: none; background: #fafafa; margin-bottom: 20px; transition: 0.2s;
-        }
-        input[type="text"]:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(0,122,255,0.1); }
+        .form-input { width: 100%; padding: 16px 20px; border: 1px solid var(--border); border-radius: 14px; font-size: 16px; outline: none; background: #fafafa; margin-bottom: 20px; transition: 0.2s; }
+        .form-input:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(0,122,255,0.1); }
         
-        .file-upload-wrapper { 
-            border: 2px dashed #C7C7CC; border-radius: 16px; padding: 40px 20px; text-align: center; 
-            position: relative; background: #fafafa; transition: 0.2s; margin-bottom: 24px; cursor: pointer;
-        }
-        .file-upload-wrapper:active { background: #F0F8FF; border-color: var(--primary); }
-        .file-upload-input { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
-        .file-upload-icon { font-size: 32px; margin-bottom: 12px; display: block; opacity: 0.7; }
-        .file-upload-text { color: #8E8E93; font-size: 16px; font-weight: 600; pointer-events: none; }
+        .upload-zone { border: 2px dashed #C7C7CC; border-radius: 16px; padding: 40px 20px; text-align: center; position: relative; background: #fafafa; transition: 0.2s; margin-bottom: 24px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .upload-zone:hover { border-color: var(--primary); background: #F0F8FF; }
+        .upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+        .upload-icon { font-size: 32px; opacity: 0.8; }
+        .upload-text { color: var(--text-muted); font-size: 15px; font-weight: 600; }
         
-        .btn-upload { width: 100%; background: var(--primary); color: white; border: none; padding: 18px; border-radius: 12px; font-size: 17px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-        .btn-upload:active:not(:disabled) { transform: scale(0.98); opacity: 0.9; }
-        .btn-upload:disabled { opacity: 0.5; cursor: not-allowed; }
-        #status { margin-top: 16px; font-weight: 600; font-size: 15px; text-align: center; }
+        .btn-primary { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 14px; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-primary:active:not(:disabled) { transform: scale(0.98); opacity: 0.9; }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        #status { margin-top: 16px; font-weight: 600; font-size: 14px; text-align: center; }
 
         .list-container { display: flex; flex-direction: column; }
-        .list-item { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid var(--border); }
-        .list-item:last-child { border-bottom: none; padding-bottom: 0; }
-        .list-item:first-child { padding-top: 0; }
-        .list-info { display: flex; align-items: center; gap: 16px; }
-        .list-info img { width: 60px; height: 60px; border-radius: 10px; object-fit: cover; background: #eee; border: 1px solid var(--border); }
-        .list-name { font-size: 17px; font-weight: 600; }
-        .btn-delete { background: #FFF0F0; color: var(--danger); border: none; padding: 10px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; min-height: 40px; }
+        .list-item { display: flex; align-items: center; justify-content: space-between; padding: 16px; border: 1px solid var(--border); border-radius: 16px; margin-bottom: 12px; transition: 0.2s; }
+        .list-item:hover { border-color: #D1D1D6; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .list-info { display: flex; align-items: center; gap: 16px; overflow: hidden; }
+        .list-info img { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); background: #eee; }
+        .list-name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
+        .btn-delete { background: #FFF0F0; color: var(--danger); border: none; padding: 8px 16px; border-radius: 16px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; }
         .btn-delete:active:not(:disabled) { transform: scale(0.92); }
-        
-        #pageLoader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--system-bg); display: flex; justify-content: center; align-items: center; z-index: 1000; font-size: 18px; font-weight: 600; color: #8E8E93; }
     </style>
 </head>
 <body>
-
     <div id="pageLoader">⏳ กำลังตรวจสอบสิทธิ์...</div>
 
     <div class="container" id="mainContainer">
@@ -71,25 +58,25 @@
         </div>
 
         <div class="card">
-            <div class="section-header">
-                <h2>อัปโหลดรูปภาพ / PDF</h2>
-                <p>ไฟล์ถูกซิงค์ผ่าน Cloudinary & Firebase</p>
+            <div class="card-header">
+                <h2>อัปโหลดไฟล์ใหม่</h2>
+                <p>รองรับไฟล์ PDF หรือรูปภาพ (JPG, PNG)</p>
             </div>
-            <input type="text" id="fileName" placeholder="ตั้งชื่อแบบฝึกหัด..." required>
-            <div class="file-upload-wrapper">
-                <span class="file-upload-icon">📄</span>
-                <span class="file-upload-text" id="fileLabelText">แตะเพื่อเลือกไฟล์ (JPG, PNG, PDF)</span>
-                <input type="file" id="fileInput" class="file-upload-input" accept="image/*, application/pdf" required>
+            <input type="text" id="fileName" class="form-input" placeholder="ตั้งชื่อแบบฝึกหัด..." required>
+            <div class="upload-zone">
+                <span class="upload-icon">📄</span>
+                <span class="upload-text" id="fileLabelText">แตะเพื่อเลือกไฟล์</span>
+                <input type="file" id="fileInput" accept="image/*, application/pdf" required>
             </div>
-            <button id="uploadBtn" class="btn-upload">อัปโหลดเข้าสู่ระบบ</button>
+            <button id="uploadBtn" class="btn-primary">อัปโหลดเข้าสู่ระบบ</button>
             <div id="status"></div>
         </div>
 
         <div class="card">
-            <div class="section-header">
+            <div class="card-header">
                 <h2>ไฟล์ในระบบ</h2>
             </div>
-            <input type="text" id="adminSearchInput" placeholder="ค้นหาชื่อรูปภาพ...">
+            <input type="text" id="adminSearchInput" class="form-input" placeholder="ค้นหาชื่อไฟล์...">
             <div id="adminGallery" class="list-container"></div>
         </div>
     </div>
@@ -99,123 +86,84 @@
         import { getFirestore, collection, addDoc, serverTimestamp, getDocs, query, orderBy, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 
-        const CLOUDINARY_CLOUD_NAME = "uhfvkgnh"; 
-        const CLOUDINARY_UPLOAD_PRESET = "ipadedit";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyA1sFQMLA7pd8sRkeqIH5H7Ixo7oDKBqeY", authDomain: "ipadeditpdf.firebaseapp.com",
-            projectId: "ipadeditpdf", storageBucket: "ipadeditpdf.firebasestorage.app",
-            messagingSenderId: "690618814362", appId: "1:690618814362:web:42c3779fd7b2b7e0d0b423"
-        };
+        const CLOUDINARY_CLOUD_NAME = "uhfvkgnh", CLOUDINARY_UPLOAD_PRESET = "ipadedit";
+        const firebaseConfig = { apiKey: "AIzaSyA1sFQMLA7pd8sRkeqIH5H7Ixo7oDKBqeY", authDomain: "ipadeditpdf.firebaseapp.com", projectId: "ipadeditpdf", storageBucket: "ipadeditpdf.firebasestorage.app", messagingSenderId: "690618814362", appId: "1:690618814362:web:42c3779fd7b2b7e0d0b423" };
         const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app);
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                document.getElementById('pageLoader').style.display = 'none';
-                document.getElementById('mainContainer').style.display = 'block';
-                loadAdminGallery();
-            } else {
-                alert("คุณไม่มีสิทธิ์เข้าถึงหน้านี้ กรุณาเข้าสู่ระบบ"); window.location.href = "index.html";
-            }
+        onAuthStateChanged(auth, user => {
+            if (user) { document.getElementById('pageLoader').style.display = 'none'; document.getElementById('mainContainer').style.display = 'block'; loadAdminGallery(); } 
+            else { alert("กรุณาเข้าสู่ระบบ"); window.location.href = "index.html"; }
         });
 
-        const adminGallery = document.getElementById('adminGallery');
-        const adminSearchInput = document.getElementById('adminSearchInput');
-        const fileInput = document.getElementById('fileInput');
-        const fileLabelText = document.getElementById('fileLabelText');
-        let allAdminItems = []; 
+        const adminGallery = document.getElementById('adminGallery'), searchInput = document.getElementById('adminSearchInput'), fileInput = document.getElementById('fileInput'), fileLabelText = document.getElementById('fileLabelText');
+        let allItems = []; 
 
-        fileInput.addEventListener('change', (e) => {
-            if(e.target.files.length > 0) {
-                fileLabelText.textContent = e.target.files[0].name;
-                fileLabelText.style.color = '#007AFF';
-            } else {
-                fileLabelText.textContent = 'แตะเพื่อเลือกไฟล์ (JPG, PNG, PDF)';
-                fileLabelText.style.color = '#8E8E93';
-            }
-        });
+        fileInput.onchange = e => {
+            fileLabelText.textContent = e.target.files.length ? e.target.files[0].name : 'แตะเพื่อเลือกไฟล์';
+            fileLabelText.style.color = e.target.files.length ? '#007AFF' : '#86868B';
+        };
 
         async function loadAdminGallery() {
-            adminGallery.innerHTML = '<p style="text-align: center; color: #8E8E93;">⏳ กำลังโหลดข้อมูล...</p>';
+            adminGallery.innerHTML = '<p style="text-align:center; color:var(--text-muted);">⏳ กำลังโหลด...</p>';
             try {
-                const q = query(collection(db, "workbooks"), orderBy("createdAt", "desc"));
-                const querySnapshot = await getDocs(q);
-                allAdminItems = []; 
-                querySnapshot.forEach((doc) => allAdminItems.push({ id: doc.id, ...doc.data() }));
-                renderAdminList(allAdminItems);
-            } catch (error) { adminGallery.innerHTML = "<p style='color: red; text-align: center;'>❌ ไม่สามารถโหลดข้อมูลได้</p>"; }
+                const snap = await getDocs(query(collection(db, "workbooks"), orderBy("createdAt", "desc")));
+                allItems = []; snap.forEach(doc => allItems.push({ id: doc.id, ...doc.data() })); renderList(allItems);
+            } catch (e) { adminGallery.innerHTML = "<p style='color:red; text-align:center;'>❌ โหลดข้อมูลล้มเหลว</p>"; }
         }
 
-        function renderAdminList(items) {
-            adminGallery.innerHTML = ''; 
-            if (items.length === 0) { adminGallery.innerHTML = "<p style='text-align: center; color: #8E8E93;'>ไม่มีข้อมูลในระบบ</p>"; return; }
-            items.forEach((data) => {
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'list-item';
-                const coverImage = data.url.split('|')[0]; 
-                itemDiv.innerHTML = `<div class="list-info"><img src="${coverImage}" alt="${data.name}"><span class="list-name">${data.name}</span></div>`;
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'btn-delete'; deleteBtn.innerHTML = "ลบ";
-                deleteBtn.onclick = async () => {
-                    if (confirm(`ต้องการลบ: "${data.name}" ใช่หรือไม่?`)) {
-                        deleteBtn.innerHTML = "กำลังลบ..."; deleteBtn.disabled = true;
-                        try { await deleteDoc(doc(db, "workbooks", data.id)); loadAdminGallery(); } 
-                        catch (error) { alert("❌ ข้อผิดพลาด: " + error.message); deleteBtn.disabled = false; }
+        function renderList(items) {
+            adminGallery.innerHTML = items.length ? '' : "<p style='text-align:center; color:var(--text-muted);'>ไม่มีข้อมูล</p>";
+            items.forEach(data => {
+                const div = document.createElement('div'); div.className = 'list-item';
+                div.innerHTML = `<div class="list-info"><img src="${data.url.split('|')[0]}"><span class="list-name" title="${data.name}">${data.name}</span></div>`;
+                const delBtn = document.createElement('button'); delBtn.className = 'btn-delete'; delBtn.textContent = "ลบ";
+                delBtn.onclick = async () => {
+                    if(confirm(`ลบ: "${data.name}"?`)) {
+                        delBtn.textContent = "ลบ..."; delBtn.disabled = true;
+                        try { await deleteDoc(doc(db, "workbooks", data.id)); loadAdminGallery(); } catch(e) { alert("❌ " + e.message); delBtn.disabled = false; }
                     }
                 };
-                itemDiv.appendChild(deleteBtn); adminGallery.appendChild(itemDiv);
+                div.appendChild(delBtn); adminGallery.appendChild(div);
             });
         }
 
-        adminSearchInput.addEventListener('input', (e) => renderAdminList(allAdminItems.filter(item => item.name.toLowerCase().includes(e.target.value.toLowerCase()))));
+        searchInput.oninput = e => renderList(allItems.filter(i => i.name.toLowerCase().includes(e.target.value.toLowerCase())));
 
-        async function uploadToCloudinary(blobOrFile) {
-            const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`;
-            const formData = new FormData();
-            formData.append("file", blobOrFile); formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-            const response = await fetch(url, { method: "POST", body: formData });
-            const data = await response.json();
-            if(!response.ok) throw new Error(data.error.message);
-            return data.secure_url;
+        async function uploadToCloudinary(blob) {
+            const fd = new FormData(); fd.append("file", blob); fd.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+            const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`, { method: "POST", body: fd });
+            const data = await res.json(); if(!res.ok) throw new Error(data.error.message); return data.secure_url;
         }
 
-        document.getElementById('uploadBtn').addEventListener('click', async () => {
-            const fileName = document.getElementById('fileName').value;
-            const statusDiv = document.getElementById('status');
-            const btn = document.getElementById('uploadBtn');
-            if (!fileName || !fileInput.files[0]) { alert('กรุณากรอกชื่อและเลือกไฟล์'); return; }
-
-            statusDiv.style.color = "#007AFF"; btn.disabled = true; btn.innerHTML = "กำลังเตรียมการ...";
-            let finalImageUrl = ""; 
+        document.getElementById('uploadBtn').onclick = async () => {
+            const name = document.getElementById('fileName').value, status = document.getElementById('status'), btn = document.getElementById('uploadBtn');
+            if(!name || !fileInput.files[0]) return alert('กรุณากรอกชื่อและเลือกไฟล์');
+            status.style.color = "var(--primary)"; btn.disabled = true; btn.textContent = "เตรียมการ...";
             try {
-                const file = fileInput.files[0];
-                if (file.type === "application/pdf") {
-                    statusDiv.innerHTML = "กำลังประมวลผล PDF...";
-                    const arrayBuffer = await file.arrayBuffer(); const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-                    const totalPages = pdf.numPages; let uploadedUrls = []; 
-                    for (let i = 1; i <= totalPages; i++) {
-                        statusDiv.innerHTML = `กำลังอัปโหลดหน้า ${i} / ${totalPages}...`;
-                        const page = await pdf.getPage(i); const viewport = page.getViewport({ scale: 2.0 }); 
-                        const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
-                        canvas.width = viewport.width; canvas.height = viewport.height;
-                        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-                        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
-                        uploadedUrls.push(await uploadToCloudinary(blob));
+                let finalUrl = "", file = fileInput.files[0];
+                if(file.type === "application/pdf") {
+                    status.textContent = "ประมวลผล PDF...";
+                    const pdf = await pdfjsLib.getDocument(await file.arrayBuffer()).promise;
+                    let urls = [];
+                    for(let i=1; i<=pdf.numPages; i++) {
+                        status.textContent = `อัปโหลดหน้า ${i}/${pdf.numPages}...`;
+                        const page = await pdf.getPage(i), vp = page.getViewport({scale: 2.0});
+                        const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d');
+                        canvas.width = vp.width; canvas.height = vp.height;
+                        await page.render({canvasContext: ctx, viewport: vp}).promise;
+                        urls.push(await uploadToCloudinary(await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.8))));
                     }
-                    finalImageUrl = uploadedUrls.join('|'); 
+                    finalUrl = urls.join('|');
                 } else {
-                    statusDiv.innerHTML = "กำลังอัปโหลดรูปภาพ..."; finalImageUrl = await uploadToCloudinary(file);
+                    status.textContent = "อัปโหลดรูปภาพ..."; finalUrl = await uploadToCloudinary(file);
                 }
-                statusDiv.innerHTML = "กำลังบันทึกลงฐานข้อมูล...";
-                await addDoc(collection(db, "workbooks"), { name: fileName, url: finalImageUrl, createdAt: serverTimestamp() });
-                
-                statusDiv.innerHTML = "✅ อัปโหลดสำเร็จเรียบร้อย!"; statusDiv.style.color = "#34C759";
-                document.getElementById('fileName').value = ''; fileInput.value = '';
-                fileLabelText.textContent = 'แตะเพื่อเลือกไฟล์ (JPG, PNG, PDF)'; fileLabelText.style.color = '#8E8E93';
-                loadAdminGallery(); 
-            } catch (error) { statusDiv.innerHTML = "❌ " + error.message; statusDiv.style.color = "#FF3B30"; } 
-            finally { btn.disabled = false; btn.innerHTML = "อัปโหลดเข้าสู่ระบบ"; }
-        });
+                status.textContent = "บันทึกฐานข้อมูล...";
+                await addDoc(collection(db, "workbooks"), { name, url: finalUrl, createdAt: serverTimestamp() });
+                status.textContent = "✅ อัปโหลดสำเร็จ!"; status.style.color = "#34C759";
+                document.getElementById('fileName').value = ''; fileInput.value = ''; fileLabelText.textContent = 'แตะเพื่อเลือกไฟล์'; fileLabelText.style.color = 'var(--text-muted)';
+                loadAdminGallery();
+            } catch(e) { status.textContent = "❌ " + e.message; status.style.color = "var(--danger)"; } finally { btn.disabled = false; btn.textContent = "อัปโหลดเข้าสู่ระบบ"; }
+        };
     </script>
 </body>
 </html>
