@@ -25,7 +25,7 @@
         
         /* --- 🎨 Floating Toolbar (Apple Style) --- */
         .header-tools { 
-            position: sticky; top: 16px; z-index: 100; width: 100%; max-width: 900px; margin: 0 auto 24px;
+            position: sticky; top: 16px; z-index: 9999; width: 100%; max-width: 900px; margin: 0 auto 24px;
             background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
             padding: 12px 20px; border-radius: 30px; box-shadow: 0 8px 32px rgba(0,0,0,0.08);
             display: flex; flex-direction: column; gap: 12px; border: 1px solid rgba(0,0,0,0.05);
@@ -101,7 +101,7 @@
 
         /* Floating Actions (Bottom Right) */
         .floating-actions {
-            position: fixed; bottom: 24px; right: 24px; z-index: 1000;
+            position: fixed; bottom: 24px; right: 24px; z-index: 9999;
             display: flex; flex-direction: column; gap: 12px; 
         }
         .btn-floating {
@@ -114,7 +114,7 @@
         .btn-floating:active { transform: scale(0.85); }
 
         /* Modals */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 10000; justify-content: center; align-items: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
         .modal-content { background: var(--surface); padding: 32px; border-radius: 24px; width: 90%; max-width: 380px; box-shadow: 0 24px 48px rgba(0,0,0,0.2); text-align: center; display: flex; flex-direction: column; }
         .modal-content h3 { margin: 0 0 24px; font-size: 22px; font-weight: 700; }
         .btn-export { display: block; width: 100%; padding: 16px; margin-bottom: 12px; font-size: 16px; font-weight: 600; border-radius: 16px; color: white; border: none; cursor: pointer; transition: 0.2s;}
@@ -154,16 +154,20 @@
 </head>
 <body>
 
-    <div class="header-tools" id="mainToolbar">
+    <!-- 🛠️ Floating Toolbar (กดเมนูได้ปกตินะครับ) -->
+    <div class="header-tools" id="mainToolbar" onpointerdown="event.stopPropagation()" onpointermove="event.stopPropagation()">
+        
         <div class="toolbar-row" style="justify-content: space-between;">
             <div class="tool-group" style="background: transparent;">
                 <button class="btn-action" onclick="goBack()" style="color: var(--primary);">‹ แกลลอรี่</button>
             </div>
+
             <div class="tool-group" id="paginationBar" style="display: none;">
                 <button class="btn-action" id="btnPrevPage" onclick="prevPage()">◀</button>
                 <span id="pageIndicator" onclick="promptJumpPage()" title="แตะเพื่อข้ามหน้า">1 / 1</span>
                 <button class="btn-action" id="btnNextPage" onclick="nextPage()">▶</button>
             </div>
+
             <div class="tool-group" style="background: transparent; gap: 8px;">
                 <button class="btn-action" onclick="clearDraft()" style="color: var(--danger); background: var(--pill-bg);">ล้างหน้า</button>
                 <button class="btn-primary" onclick="openExportModal()">ส่งออก</button>
@@ -175,11 +179,13 @@
                 <button class="btn-action" onclick="undo()" title="ย้อนกลับ">↩</button>
                 <button class="btn-action" onclick="redo()" title="ทำซ้ำ">↪</button>
             </div>
+
             <div class="tool-group">
                 <button class="tool-btn active" id="btnPen" onclick="setTool('pen', this)" title="ปากกา">🖊️</button>
                 <button class="tool-btn" id="btnHighlighter" onclick="setTool('highlighter', this)" title="ไฮไลท์">🖍️</button>
                 <button class="tool-btn" id="btnEraser" onclick="setTool('eraser', this)" title="ยางลบ">🧽</button>
             </div>
+            
             <div class="tool-group">
                 <button class="color-dot active" style="background: #1D1D1F;" onclick="setColor('#1D1D1F', this)"></button>
                 <button class="color-dot" style="background: #FF3B30;" onclick="setColor('#FF3B30', this)"></button>
@@ -188,6 +194,7 @@
                     <input type="color" id="colorPicker" value="#34C759" onchange="setColor(this.value, document.getElementById('customColorWrapper'))">
                 </div>
             </div>
+            
             <div class="tool-group">
                 <div class="slider-group" title="ขนาดหัวปากกา">
                     <span style="font-size: 16px;">◍</span>
@@ -198,19 +205,26 @@
                     <input type="range" id="opacitySlider" min="0.1" max="1" step="0.1" value="1" oninput="currentOpacity = parseFloat(this.value)">
                 </div>
             </div>
+
             <div class="tool-group">
                 <button class="btn-action" id="btnTheme" onclick="toggleTheme()" title="สลับโหมดสี">🌙</button>
             </div>
         </div>
     </div>
 
-    <div class="floating-actions">
-        <button class="btn-floating" id="btnFloatingThumbnail" onclick="openThumbnailModal()" title="ดูทุกหน้า" style="display: none;">🎛️</button>
-        <button class="btn-floating" onclick="toggleMenu()" title="ซ่อน/แสดงเมนู"><span id="toggleIcon">🔽</span></button>
+    <!-- Floating Actions -->
+    <div class="floating-actions" onpointerdown="event.stopPropagation()" onpointermove="event.stopPropagation()">
+        <button class="btn-floating" id="btnFloatingThumbnail" onclick="openThumbnailModal()" title="ดูทุกหน้า" style="display: none;">
+            🎛️
+        </button>
+        <button class="btn-floating" onclick="toggleMenu()" title="ซ่อน/แสดงเมนู">
+            <span id="toggleIcon">🔽</span>
+        </button>
     </div>
 
     <div id="workspace"></div>
 
+    <!-- Modals -->
     <div id="exportModal" class="modal-overlay">
         <div class="modal-content">
             <h3>💾 เลือกรูปแบบไฟล์</h3>
@@ -390,6 +404,29 @@
             });
         }
 
+        // --- 🛡️ ฟังก์ชันเช็คโซนหวงห้าม (ป้องกันวาดทะลุเมนู) ---
+        function isInRestrictedZone(x, y) {
+            const topMenu = document.getElementById('mainToolbar');
+            if (!isMenuHidden && topMenu) {
+                const rect = topMenu.getBoundingClientRect();
+                // บล็อกทั้งแถบแนวนอนด้านบน ไม่ให้วาดผ่านได้เลยแม้แต่ตรงขอบ (อ้างอิงจากแกน Y)
+                if (y >= rect.top - 20 && y <= rect.bottom + 20) {
+                    return true;
+                }
+            }
+            
+            const floatingBtn = document.querySelector('.floating-actions');
+            if (floatingBtn) {
+                const fRect = floatingBtn.getBoundingClientRect();
+                // บล็อกโซนปุ่มขวาล่าง
+                if (x >= fRect.left - 20 && x <= fRect.right + 20 && y >= fRect.top - 20 && y <= fRect.bottom + 20) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        // --------------------------------------------------
+
         function setupDrawingSystem(canvas, draftCanvas, pageIndex) {
             const ctx = canvas.getContext('2d', { willReadFrequently: true }); 
             const draftCtx = draftCanvas.getContext('2d', { willReadFrequently: true }); 
@@ -402,6 +439,12 @@
             
             canvas.addEventListener('pointerdown', (e) => {
                 if (e.pointerType === 'touch') return; 
+                
+                // 🛑 ถ้าเอาปากกามาจิ้มเริ่มวาดบนโซนเมนู ให้ยกเลิกการวาดทันที
+                if (isInRestrictedZone(e.clientX, e.clientY)) {
+                    return; 
+                }
+
                 e.preventDefault(); 
                 const pos = getPos(e.clientX, e.clientY);
                 globalUndoStack.push({ index: pageIndex, imageData: ctx.getImageData(0, 0, canvas.width, canvas.height) });
@@ -413,19 +456,10 @@
             canvas.addEventListener('pointermove', (e) => {
                 if (!isDrawing || e.pointerType === 'touch') return; 
 
-                const topMenu = document.getElementById('mainToolbar');
-                if (!isMenuHidden && topMenu) {
-                    const rect = topMenu.getBoundingClientRect();
-                    if (e.clientX >= rect.left - 10 && e.clientX <= rect.right + 10 && e.clientY >= rect.top - 10 && e.clientY <= rect.bottom + 10) {
-                        stopAction(e); return;
-                    }
-                }
-                const floatingBtn = document.querySelector('.floating-actions');
-                if (floatingBtn) {
-                    const fRect = floatingBtn.getBoundingClientRect();
-                    if (e.clientX >= fRect.left - 10 && e.clientX <= fRect.right + 10 && e.clientY >= fRect.top - 10 && e.clientY <= fRect.bottom + 10) {
-                        stopAction(e); return;
-                    }
+                // 🛑 ถ้าลากเส้นมาจากที่อื่น แล้วเส้นทะลุเข้ามาในโซนเมนู ให้ตัดเส้นทิ้งทันที
+                if (isInRestrictedZone(e.clientX, e.clientY)) {
+                    stopAction(e); 
+                    return;
                 }
 
                 e.preventDefault();
@@ -493,12 +527,10 @@
         }
         window.openExportModal = function() { document.getElementById('exportModal').style.display = 'flex'; }
         window.closeExportModal = function() { document.getElementById('exportModal').style.display = 'none'; }
-
-        // --- 🛠️ แก้ปัญหาโหลดรูปจาก Base64 บน Safari (iOS/iPadOS) ---
         function loadImage(src) { 
             return new Promise((res, rej) => { 
                 const img = new Image(); 
-                if (!src.startsWith('data:')) { img.crossOrigin = "anonymous"; } // 👈 ห้ามใส่ anonymous ให้ data URL
+                if (!src.startsWith('data:')) { img.crossOrigin = "anonymous"; }
                 img.onload = () => res(img); 
                 img.onerror = (e) => rej(new Error('โหลดภาพล้มเหลว')); 
                 img.src = src; 
@@ -518,7 +550,6 @@
                         const exportCanvas = document.createElement('canvas'); exportCanvas.width = bgImg.naturalWidth; exportCanvas.height = bgImg.naturalHeight;
                         const ctx = exportCanvas.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height); ctx.drawImage(bgImg, 0, 0);
                         
-                        // 🛠️ ดูดลายเส้นจากหน้ากระดานปัจจุบันโดยตรง (แก้ปัญหา iPad เซฟไม่ติด)
                         const activeCanvas = document.getElementById(`canvas-page-${i}`);
                         if (activeCanvas) {
                             ctx.drawImage(activeCanvas, 0, 0);
@@ -541,7 +572,6 @@
                     if (format === 'jpg') { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height); }
                     ctx.drawImage(bgImg, 0, 0);
 
-                    // 🛠️ ดูดลายเส้นจากหน้ากระดานปัจจุบันโดยตรง
                     const activeCanvas = document.getElementById(`canvas-page-${currentPageIndex}`);
                     if (activeCanvas) {
                         ctx.drawImage(activeCanvas, 0, 0);
