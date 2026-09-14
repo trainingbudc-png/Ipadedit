@@ -89,7 +89,9 @@
     </style>
 </head>
 <body>
-    <div class="toolbar-main" id="mainToolbar" onpointerdown="event.stopPropagation()" onpointermove="event.stopPropagation()">
+    
+    <!-- 🛑 เพิ่ม onpointerdown="window.lockDrawing(500)" บนแถบเมนูทั้งหมด เพื่อล็อกกระดาษทันทีที่แตะเมนู -->
+    <div class="toolbar-main" id="mainToolbar" onpointerdown="window.lockDrawing(500); event.stopPropagation()" onpointermove="event.stopPropagation()">
         <div class="toolbar-row" style="justify-content: space-between;">
             <div class="tool-group" style="background: transparent;">
                 <button class="btn" onclick="goBack()" style="color: var(--primary);">‹ กลับ</button>
@@ -120,18 +122,18 @@
                 <button class="color-dot" style="background: #FF3B30;" onclick="setColor('#FF3B30', this)"></button>
                 <button class="color-dot" style="background: #007AFF;" onclick="setColor('#007AFF', this)"></button>
                 
-                <!-- 🛑 ดักสถานะเมื่อตารางสีถูกคลิก -->
+                <!-- 🛑 ควบคุมตารางสีให้รัดกุม ดักทุก Action ที่เกี่ยวข้องกับการเลือกสี -->
                 <div class="color-dot color-picker-wrapper" id="customColorWrapper">
                     <input type="color" class="color-picker" id="colorPicker" value="#34C759" 
-                           onclick="window.isColorPickerOpen = true;" 
-                           onchange="setColor(this.value, document.getElementById('customColorWrapper')); window.isColorPickerOpen = false;" 
-                           onblur="window.isColorPickerOpen = false;"
-                           oninput="setColor(this.value, document.getElementById('customColorWrapper'))">
+                           onclick="window.lockDrawing(1000);" 
+                           onblur="window.lockDrawing(500);"
+                           oninput="setColor(this.value, document.getElementById('customColorWrapper')); window.lockDrawing(800);" 
+                           onchange="setColor(this.value, document.getElementById('customColorWrapper')); window.lockDrawing(800);">
                 </div>
             </div>
             <div class="tool-group">
-                <div class="slider-wrapper"><span>◍</span><input type="range" id="sizeSlider" min="1" max="50" value="5" oninput="currentSize = parseInt(this.value)"></div>
-                <div class="slider-wrapper"><span>◑</span><input type="range" id="opacitySlider" min="0.1" max="1" step="0.1" value="1" oninput="currentOpacity = parseFloat(this.value)"></div>
+                <div class="slider-wrapper"><span>◍</span><input type="range" id="sizeSlider" min="1" max="50" value="5" oninput="currentSize = parseInt(this.value); window.lockDrawing(500);"></div>
+                <div class="slider-wrapper"><span>◑</span><input type="range" id="opacitySlider" min="0.1" max="1" step="0.1" value="1" oninput="currentOpacity = parseFloat(this.value); window.lockDrawing(500);"></div>
             </div>
             <div class="tool-group">
                 <button class="btn btn-icon" onclick="toggleTheme()">🌙</button>
@@ -139,7 +141,7 @@
         </div>
     </div>
 
-    <div class="fab-container" onpointerdown="event.stopPropagation()" onpointermove="event.stopPropagation()">
+    <div class="fab-container" onpointerdown="window.lockDrawing(500); event.stopPropagation()" onpointermove="event.stopPropagation()">
         <button class="fab" id="btnThumb" onclick="openThumbnailModal()" style="display: none;">🎛️</button>
         <button class="fab" onclick="toggleMenu()"><span id="toggleIcon">🔽</span></button>
     </div>
@@ -192,6 +194,17 @@
     </script>
 
     <script>
+        // 🛡️ ระบบล็อกการวาด (Drawing Cooldown) 
+        // เมื่อมีการกด UI หน้าจอจะปฏิเสธเส้นวาดทั้งหมดเป็นระยะเวลาที่กำหนด
+        window.isDrawingLocked = false;
+        let drawLockTimer = null;
+        window.lockDrawing = function(ms = 500) {
+            window.isDrawingLocked = true;
+            clearTimeout(drawLockTimer);
+            drawLockTimer = setTimeout(() => { window.isDrawingLocked = false; }, ms);
+            if (window.stopDrawingAction) window.stopDrawingAction();
+        };
+
         let isSafeToLeave = false; 
         window.onbeforeunload = e => { if (!isSafeToLeave) { e.preventDefault(); return e.returnValue = 'แน่ใจหรือไม่?'; } };
         window.history.pushState({ locked: true }, '');
@@ -212,16 +225,19 @@
             menuHidden = !menuHidden;
             document.getElementById('mainToolbar').classList.toggle('hidden', menuHidden);
             document.getElementById('toggleIcon').innerText = menuHidden ? '🛠️' : '🔽';
+            window.lockDrawing(500);
         }
 
         function toggleTheme() {
             isDark = !isDark; document.body.classList.toggle('dark-theme', isDark);
+            window.lockDrawing(500);
         }
 
         function setTool(tool, el) {
             currentTool = tool;
             document.querySelectorAll('.btn-icon').forEach(b => b.classList.remove('active'));
             if(el) el.classList.add('active'); else document.getElementById(tool==='highlighter'?'btnHighlighter':'btnPen').classList.add('active');
+            window.lockDrawing(500);
         }
 
         window.setColor = function(color, el) {
@@ -229,10 +245,10 @@
             document.querySelectorAll('.color-dot').forEach(b => b.classList.remove('active'));
             if(el) el.classList.add('active');
             if(currentTool === 'eraser') setTool('pen', document.getElementById('btnPen'));
-            if (window.stopDrawingAction) window.stopDrawingAction();
         }
 
         function undo() {
+            window.lockDrawing(500);
             if (!globalUndo.length) return;
             const last = globalUndo.pop(), cvs = document.getElementById(`cvs-${last.idx}`);
             if (cvs) {
@@ -243,6 +259,7 @@
         }
 
         function redo() {
+            window.lockDrawing(500);
             if (!globalRedo.length) return;
             const next = globalRedo.pop(), cvs = document.getElementById(`cvs-${next.idx}`);
             if (cvs) {
@@ -267,6 +284,7 @@
             document.getElementById('pageIndicator').innerText = `${curIdx + 1} / ${urls.length}`;
             document.getElementById('btnPrevPage').disabled = curIdx === 0;
             document.getElementById('btnNextPage').disabled = curIdx === urls.length - 1;
+            window.lockDrawing(500);
         }
 
         window.prevPage = async () => { if(curIdx > 0) { await saveCvs(); curIdx--; renderPage(); } };
@@ -299,18 +317,17 @@
             });
         }
 
-        // 🛑 สนามพลังป้องกัน UI แบบเด็ดขาด
+        // 🛑 สนามพลังป้องกัน UI แบบเด็ดขาด (Spatial Lock)
         function isProtectedZone(x, y) {
             const tb = document.getElementById('mainToolbar');
             if (!menuHidden && tb) { 
                 const r = tb.getBoundingClientRect(); 
-                // บล็อกทั้งแถบความสูงด้านบนของหน้าจอแบบลากยาว (ตัดปัญหาทะลุเมนู)
+                // บล็อกทั้งแถบความสูงด้านบนของหน้าจอแบบลากยาว ไม่ให้เส้นทะลุลงมาเด็ดขาด
                 if (y <= r.bottom + 30) return true; 
             }
             const fab = document.querySelector('.fab-container');
             if (fab) { 
                 const r = fab.getBoundingClientRect(); 
-                // บล็อกมุมขวาล่าง
                 if (x >= r.left - 30 && y >= r.top - 30) return true; 
             }
             return false;
@@ -325,18 +342,14 @@
             cvs.onpointerdown = e => {
                 if (e.pointerType === 'touch') return;
                 
-                // 🛑 1. ป้องกันการวาดทะลุตารางสีขณะเปิดอยู่
-                if (window.isColorPickerOpen || (document.activeElement && document.activeElement.id === 'colorPicker')) {
-                    document.activeElement.blur();
-                    window.isColorPickerOpen = false;
-                    return; 
-                }
+                // 🛑 เกราะชั้น 1: ปฏิเสธการวาดทันทีถ้าระบบติด Cooldown (เพิ่งกดเมนู/สี)
+                if (window.isDrawingLocked) return;
 
-                // 🛑 2. ป้องกันการจิ้มเริ่มวาดบนเขตหวงห้าม (เครื่องมือด้านบน)
-                if (isProtectedZone(e.clientX, e.clientY)) return;
-
-                // 🛑 3. ป้องกันการวาดแบบลอยๆ (Hover Ghosting)
+                // 🛑 เกราะชั้น 2: ป้องกันบั๊กจิ้มลอยๆ (Hover) ของ Pencil
                 if (e.buttons === 0) return;
+
+                // 🛑 เกราะชั้น 3: ป้องกันจิ้มในพื้นที่หวงห้าม
+                if (e.target.tagName !== 'CANVAS' || isProtectedZone(e.clientX, e.clientY)) return;
 
                 e.preventDefault(); const p = getP(e.clientX, e.clientY);
                 globalUndo.push({ idx, img: ctx.getImageData(0,0,cvs.width,cvs.height) });
@@ -348,9 +361,11 @@
             cvs.onpointermove = e => {
                 if (!drawing || e.pointerType === 'touch') return; 
                 
-                // 🛑 4. ถ้าลากเส้นแฉลบเข้าไปในเขตเครื่องมือ ตัดเส้นทิ้งทันที!
-                if (isProtectedZone(e.clientX, e.clientY)) { stop(e); return; }
-                if (e.buttons === 0) { stop(e); return; }
+                // 🛑 เกราะชั้น 4: ระหว่างวาดอยู่ ถ้าติด Cooldown, เข้าเขตหวงห้าม, หรือปากกาลอย ให้สับเส้นทิ้งทันที
+                if (window.isDrawingLocked || isProtectedZone(e.clientX, e.clientY) || e.buttons === 0) { 
+                    stop(e); 
+                    return; 
+                }
 
                 e.preventDefault(); const p = getP(e.clientX, e.clientY);
                 if (currentTool === 'eraser') {
@@ -384,6 +399,7 @@
         }
 
         async function clearDraft() {
+            window.lockDrawing(500);
             if(confirm('ลบลายมือหน้านี้?')) {
                 const cvs = document.getElementById(`cvs-${curIdx}`);
                 if(cvs) {
@@ -395,6 +411,7 @@
         }
 
         window.openThumbnailModal = () => {
+            window.lockDrawing(500);
             const g = document.getElementById('thumbnailGrid'); g.innerHTML = '';
             urls.forEach((u, i) => {
                 const d = document.createElement('div'); d.className = `thumb-item ${i === curIdx ? 'active' : ''}`;
@@ -409,7 +426,7 @@
             if (p) { const t = parseInt(p) - 1; if (t >= 0 && t < urls.length && t !== curIdx) { saveCvs().then(() => { curIdx = t; renderPage(); }); } }
         };
         
-        window.openExportModal = () => document.getElementById('exportModal').style.display = 'flex';
+        window.openExportModal = () => { window.lockDrawing(500); document.getElementById('exportModal').style.display = 'flex'; }
         window.closeExportModal = () => document.getElementById('exportModal').style.display = 'none';
         
         const loadImg = src => new Promise((res, rej) => { const i = new Image(); if (!src.startsWith('data:')) i.crossOrigin = "anonymous"; i.onload = () => res(i); i.onerror = () => rej(new Error('โหลดภาพล้มเหลว')); i.src = src; });
@@ -467,6 +484,7 @@
             b.innerHTML = ot; isSafeToLeave = false;
         };
 
+        // ล็อกหน้าจอเฉพาะตอนกระดาษ (กันเมนูเลื่อนไม่ได้)
         document.addEventListener('touchmove', e => { 
             if (e.target.tagName === 'CANVAS' && e.touches.length === 1) e.preventDefault(); 
         }, { passive: false });
