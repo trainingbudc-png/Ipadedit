@@ -7,44 +7,45 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';</script>
     <style>
-        :root { --primary: #007AFF; --danger: #FF3B30; --bg: #F5F5F7; --surface: #FFFFFF; --text-main: #1D1D1F; --text-muted: #86868B; --border: #E5E5EA; --radius: 16px; }
+        :root { --primary: #007AFF; --danger: #FF3B30; --bg: #F2F2F7; --surface: #FFFFFF; --text-main: #1C1C1E; --text-muted: #8E8E93; --border: #C6C6C8; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; }
-        body { background-color: var(--bg); margin: 0; padding: env(safe-area-inset-top) 24px 5%; color: var(--text-main); -webkit-font-smoothing: antialiased; }
+        body { background-color: var(--bg); margin: 0; padding: 0; color: var(--text-main); -webkit-font-smoothing: antialiased; }
         
         #pageLoader { position: fixed; inset: 0; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 1000; font-size: 16px; font-weight: 600; color: var(--text-muted); }
-        .container { max-width: 800px; margin: 0 auto; display: none; padding-bottom: 40px; }
+        .container { max-width: 800px; margin: 0 auto; display: none; padding: env(safe-area-inset-top) 24px 24px; padding-top: 40px; padding-bottom: 60px; }
         
-        .header-bar { display: flex; align-items: center; gap: 16px; margin: 16px 0 32px; }
-        .btn-back { display: flex; align-items: center; justify-content: center; background: var(--surface); color: var(--primary); border: 1px solid var(--border); width: 44px; height: 44px; border-radius: 50%; font-size: 20px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: 0.2s; text-decoration: none; }
+        .header-bar { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; }
+        .btn-back { display: flex; align-items: center; justify-content: center; background: var(--surface); color: var(--primary); border: 1px solid var(--border); width: 44px; height: 44px; border-radius: 50%; font-size: 20px; cursor: pointer; transition: 0.2s; text-decoration: none; }
         .btn-back:active { transform: scale(0.92); }
         .page-title { font-size: 28px; font-weight: 700; margin: 0; }
 
-        .card { background: var(--surface); border-radius: 24px; padding: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid var(--border); margin-bottom: 24px; }
+        /* 🗂️ Content Box */
+        .card-panel { background: var(--surface); border-radius: 24px; padding: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid var(--border); margin-bottom: 24px; }
         .card-header { margin-bottom: 24px; }
-        .card-header h2 { margin: 0 0 8px 0; font-size: 20px; font-weight: 600; }
-        .card-header p { margin: 0; color: var(--text-muted); font-size: 14px; }
+        .card-header h2 { margin: 0 0 8px 0; font-size: 20px; font-weight: 700; }
+        .card-header p { margin: 0; color: var(--text-muted); font-size: 14px; font-weight: 500; }
 
-        .form-input { width: 100%; padding: 16px 20px; border: 1px solid var(--border); border-radius: 14px; font-size: 16px; outline: none; background: #fafafa; margin-bottom: 20px; transition: 0.2s; }
+        .form-input { width: 100%; padding: 16px 20px; border: 1px solid var(--border); border-radius: 12px; font-size: 16px; outline: none; background: var(--bg); margin-bottom: 20px; transition: 0.2s; }
         .form-input:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(0,122,255,0.1); }
         
-        .upload-zone { border: 2px dashed #C7C7CC; border-radius: 16px; padding: 40px 20px; text-align: center; position: relative; background: #fafafa; transition: 0.2s; margin-bottom: 24px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .upload-zone { border: 2px dashed #A1A1A6; border-radius: 16px; padding: 40px 20px; text-align: center; position: relative; background: #fafafa; transition: 0.2s; margin-bottom: 24px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 12px; }
         .upload-zone:hover { border-color: var(--primary); background: #F0F8FF; }
         .upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
         .upload-icon { font-size: 32px; opacity: 0.8; }
         .upload-text { color: var(--text-muted); font-size: 15px; font-weight: 600; }
         
-        .btn-primary { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 14px; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-primary { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.2s; }
         .btn-primary:active:not(:disabled) { transform: scale(0.98); opacity: 0.9; }
         .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
         #status { margin-top: 16px; font-weight: 600; font-size: 14px; text-align: center; }
 
         .list-container { display: flex; flex-direction: column; }
-        .list-item { display: flex; align-items: center; justify-content: space-between; padding: 16px; border: 1px solid var(--border); border-radius: 16px; margin-bottom: 12px; transition: 0.2s; }
-        .list-item:hover { border-color: #D1D1D6; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .list-item { display: flex; align-items: center; justify-content: space-between; padding: 16px; border: 1px solid var(--border); border-radius: 14px; margin-bottom: 12px; transition: 0.2s; background: var(--surface); }
+        .list-item:hover { border-color: #A1A1A6; }
         .list-info { display: flex; align-items: center; gap: 16px; overflow: hidden; }
-        .list-info img { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); background: #eee; }
+        .list-info img { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); background: #F2F2F7; }
         .list-name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
-        .btn-delete { background: #FFF0F0; color: var(--danger); border: none; padding: 8px 16px; border-radius: 16px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-delete { background: #FFF0F0; color: var(--danger); border: 1px solid #FFE5E5; padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; }
         .btn-delete:active:not(:disabled) { transform: scale(0.92); }
     </style>
 </head>
@@ -57,7 +58,7 @@
             <h1 class="page-title">จัดการระบบ</h1>
         </div>
 
-        <div class="card">
+        <div class="card-panel">
             <div class="card-header">
                 <h2>อัปโหลดไฟล์ใหม่</h2>
                 <p>รองรับไฟล์ PDF หรือรูปภาพ (JPG, PNG)</p>
@@ -72,7 +73,7 @@
             <div id="status"></div>
         </div>
 
-        <div class="card">
+        <div class="card-panel">
             <div class="card-header">
                 <h2>ไฟล์ในระบบ</h2>
             </div>
@@ -100,7 +101,7 @@
 
         fileInput.onchange = e => {
             fileLabelText.textContent = e.target.files.length ? e.target.files[0].name : 'แตะเพื่อเลือกไฟล์';
-            fileLabelText.style.color = e.target.files.length ? '#007AFF' : '#86868B';
+            fileLabelText.style.color = e.target.files.length ? '#007AFF' : '#8E8E93';
         };
 
         async function loadAdminGallery() {
