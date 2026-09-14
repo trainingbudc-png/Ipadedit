@@ -32,12 +32,6 @@
         .color-dot { width: 28px; height: 28px; border-radius: 50%; border: none; cursor: pointer; margin: 0 2px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1); transition: 0.2s; display: inline-flex; justify-content: center; align-items: center; }
         .color-dot.active { transform: scale(1.15); box-shadow: 0 0 0 2px var(--pill), 0 0 0 4px var(--primary); }
         
-        /* ใช้ Color Picker มาตรฐานของระบบ เพื่อให้ iPad เปิดได้ 100% */
-        .color-picker-wrapper { padding: 0; background: none; overflow: hidden; }
-        .color-picker { width: 100%; height: 100%; border: none; border-radius: 50%; cursor: pointer; padding: 0; background: none; outline: none; }
-        .color-picker::-webkit-color-swatch-wrapper { padding: 0; }
-        .color-picker::-webkit-color-swatch { border: none; border-radius: 50%; }
-        
         .slider-wrapper { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #8E8E93; margin: 0 8px; }
         input[type="range"] { -webkit-appearance: none; width: 70px; height: 6px; background: rgba(0,0,0,0.1); border-radius: 3px; outline: none; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: 0.2s; }
@@ -123,14 +117,17 @@
                 <button class="color-dot" style="background: #FF3B30;" onclick="setColor('#FF3B30', this)"></button>
                 <button class="color-dot" style="background: #007AFF;" onclick="setColor('#007AFF', this)"></button>
                 
-                <!-- 🛑 กลับมาใช้ Color Picker ของระบบ และหน่วงเวลาล็อกการวาดให้นานขึ้นเพื่อป้องกันเส้นผีหลอกตอนเลือกสี -->
-                <div class="color-dot color-picker-wrapper" id="customColorWrapper">
-                    <input type="color" class="color-picker" id="colorPicker" value="#34C759" 
-                           onclick="window.lockDrawing(1500);" 
-                           onblur="window.lockDrawing(1000);"
-                           oninput="setColor(this.value, document.getElementById('customColorWrapper')); window.lockDrawing(1000);" 
-                           onchange="setColor(this.value, document.getElementById('customColorWrapper')); window.lockDrawing(1000);">
-                </div>
+                <!-- 🛑 ใช้ Label หลอกปากกา Apple Pencil เพื่อป้องกันฟีเจอร์ Scribble แทรกแซง -->
+                <label class="color-dot" id="customColorWrapper" for="hiddenColorPicker" style="background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red); cursor: pointer; padding: 0; border: none; position: relative;">
+                    <!-- วงกลมแสดงสีปัจจุบัน -->
+                    <div id="customColorDisplay" style="width: 20px; height: 20px; border-radius: 50%; background: #34C759; border: 2px solid white; pointer-events: none;"></div>
+                </label>
+                
+                <!-- ตัว Input จริงๆ ถูกจับโยนออกไปนอกหน้าจอที่ระยะ -9999px -->
+                <input type="color" id="hiddenColorPicker" value="#34C759" 
+                       style="position: absolute; left: -9999px; top: -9999px; width: 0; height: 0; opacity: 0;"
+                       oninput="updateCustomColor(this.value)" 
+                       onchange="updateCustomColor(this.value)">
             </div>
             <div class="tool-group">
                 <div class="slider-wrapper"><span>◍</span><input type="range" id="sizeSlider" min="1" max="50" value="5" oninput="currentSize = parseInt(this.value); window.lockDrawing(500);"></div>
@@ -245,6 +242,13 @@
             document.querySelectorAll('.color-dot').forEach(b => b.classList.remove('active'));
             if(el) el.classList.add('active');
             if(currentTool === 'eraser') setTool('pen', document.getElementById('btnPen'));
+        }
+
+        // 🛑 ฟังก์ชันอัปเดตสีจากช่อง Color Picker พร้อมแช่แข็งกระดาษกันเส้นทะลุ
+        window.updateCustomColor = function(val) {
+            document.getElementById('customColorDisplay').style.background = val;
+            setColor(val, document.getElementById('customColorWrapper'));
+            window.lockDrawing(1000); 
         }
 
         function undo() {
