@@ -99,10 +99,10 @@
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; touch-action: auto; cursor: crosshair; }
         .draft-canvas { pointer-events: none; } 
 
-        /* 📍 Floating Actions (Bottom Right) - จัดเรียงแนวตั้ง */
+        /* Floating Actions (Bottom Right) */
         .floating-actions {
             position: fixed; bottom: 24px; right: 24px; z-index: 1000;
-            display: flex; flex-direction: column; gap: 12px; /* 👈 เปลี่ยนเป็น column */
+            display: flex; flex-direction: column; gap: 12px; 
         }
         .btn-floating {
             width: 54px; height: 54px; border-radius: 27px;
@@ -154,42 +154,32 @@
 </head>
 <body>
 
-    <!-- 🛠️ Floating Toolbar -->
     <div class="header-tools" id="mainToolbar">
-        
-        <!-- Row 1: Navigation & Actions -->
         <div class="toolbar-row" style="justify-content: space-between;">
             <div class="tool-group" style="background: transparent;">
                 <button class="btn-action" onclick="goBack()" style="color: var(--primary);">‹ แกลลอรี่</button>
             </div>
-
-            <!-- Pagination Group -->
             <div class="tool-group" id="paginationBar" style="display: none;">
                 <button class="btn-action" id="btnPrevPage" onclick="prevPage()">◀</button>
                 <span id="pageIndicator" onclick="promptJumpPage()" title="แตะเพื่อข้ามหน้า">1 / 1</span>
                 <button class="btn-action" id="btnNextPage" onclick="nextPage()">▶</button>
             </div>
-
             <div class="tool-group" style="background: transparent; gap: 8px;">
                 <button class="btn-action" onclick="clearDraft()" style="color: var(--danger); background: var(--pill-bg);">ล้างหน้า</button>
                 <button class="btn-primary" onclick="openExportModal()">ส่งออก</button>
             </div>
         </div>
         
-        <!-- Row 2: Drawing Tools -->
         <div class="toolbar-row" style="justify-content: center;">
             <div class="tool-group">
                 <button class="btn-action" onclick="undo()" title="ย้อนกลับ">↩</button>
                 <button class="btn-action" onclick="redo()" title="ทำซ้ำ">↪</button>
             </div>
-
             <div class="tool-group">
                 <button class="tool-btn active" id="btnPen" onclick="setTool('pen', this)" title="ปากกา">🖊️</button>
                 <button class="tool-btn" id="btnHighlighter" onclick="setTool('highlighter', this)" title="ไฮไลท์">🖍️</button>
                 <button class="tool-btn" id="btnEraser" onclick="setTool('eraser', this)" title="ยางลบ">🧽</button>
             </div>
-            
-            <!-- Quick Colors -->
             <div class="tool-group">
                 <button class="color-dot active" style="background: #1D1D1F;" onclick="setColor('#1D1D1F', this)"></button>
                 <button class="color-dot" style="background: #FF3B30;" onclick="setColor('#FF3B30', this)"></button>
@@ -198,8 +188,6 @@
                     <input type="color" id="colorPicker" value="#34C759" onchange="setColor(this.value, document.getElementById('customColorWrapper'))">
                 </div>
             </div>
-            
-            <!-- Sliders -->
             <div class="tool-group">
                 <div class="slider-group" title="ขนาดหัวปากกา">
                     <span style="font-size: 16px;">◍</span>
@@ -210,28 +198,19 @@
                     <input type="range" id="opacitySlider" min="0.1" max="1" step="0.1" value="1" oninput="currentOpacity = parseFloat(this.value)">
                 </div>
             </div>
-
             <div class="tool-group">
                 <button class="btn-action" id="btnTheme" onclick="toggleTheme()" title="สลับโหมดสี">🌙</button>
             </div>
         </div>
     </div>
 
-    <!-- Floating Actions (Bottom Right) -->
     <div class="floating-actions">
-        <!-- ปุ่มดูทุกหน้า อยู่ด้านบน -->
-        <button class="btn-floating" id="btnFloatingThumbnail" onclick="openThumbnailModal()" title="ดูทุกหน้า" style="display: none;">
-            🎛️
-        </button>
-        <!-- ปุ่มซ่อนเมนู อยู่ด้านล่าง -->
-        <button class="btn-floating" onclick="toggleMenu()" title="ซ่อน/แสดงเมนู">
-            <span id="toggleIcon">🔽</span>
-        </button>
+        <button class="btn-floating" id="btnFloatingThumbnail" onclick="openThumbnailModal()" title="ดูทุกหน้า" style="display: none;">🎛️</button>
+        <button class="btn-floating" onclick="toggleMenu()" title="ซ่อน/แสดงเมนู"><span id="toggleIcon">🔽</span></button>
     </div>
 
     <div id="workspace"></div>
 
-    <!-- Modals (Export & Thumbnails) -->
     <div id="exportModal" class="modal-overlay">
         <div class="modal-content">
             <h3>💾 เลือกรูปแบบไฟล์</h3>
@@ -283,10 +262,24 @@
 
     <script>
         let isSafeToLeave = false; 
-        window.addEventListener('beforeunload', e => { if (!isSafeToLeave) { e.preventDefault(); e.returnValue = ''; } });
+
+        window.addEventListener('beforeunload', e => { 
+            if (!isSafeToLeave) { 
+                e.preventDefault(); e.returnValue = 'คุณแน่ใจหรือไม่ที่จะออกจากหน้านี้?'; return e.returnValue;
+            } 
+        });
+
+        window.history.pushState({ locked: true }, '');
+        window.addEventListener('popstate', function(event) {
+            if (!isSafeToLeave) {
+                if (confirm('🚨 คุณกำลังจะออกจากหน้านี้\n(ระบบบันทึกลายเส้นล่าสุดไว้ในเครื่องแล้ว)\n\nยืนยันที่จะออกใช่หรือไม่?')) {
+                    isSafeToLeave = true; window.history.back();
+                } else { window.history.pushState({ locked: true }, ''); }
+            }
+        });
         
         function goBack() { 
-            if(confirm('ระบบบันทึกความคืบหน้าอัตโนมัติแล้ว\nต้องการกลับหน้าแรกใช่หรือไม่?')) {
+            if(confirm('🚨 คุณกำลังจะกลับหน้าแรก\n(ระบบบันทึกลายเส้นล่าสุดไว้ในเครื่องแล้ว)\n\nยืนยันที่จะออกใช่หรือไม่?')) {
                 isSafeToLeave = true; window.location.href = 'index.html'; 
             }
         }
@@ -300,11 +293,9 @@
             const menu = document.getElementById('mainToolbar');
             const icon = document.getElementById('toggleIcon');
             if (isMenuHidden) {
-                menu.classList.add('hidden');
-                icon.innerText = '🛠️';
+                menu.classList.add('hidden'); icon.innerText = '🛠️';
             } else {
-                menu.classList.remove('hidden');
-                icon.innerText = '🔽';
+                menu.classList.remove('hidden'); icon.innerText = '🔽';
             }
         }
 
@@ -351,11 +342,9 @@
 
         window.initializeWorkspace = function(imageUrls, docId) {
             allPageUrls = imageUrls.split('|').map(url => url.trim()); currentDocId = docId; currentPageIndex = 0;
-            
             const showPagination = allPageUrls.length > 1 ? 'flex' : 'none';
             document.getElementById('paginationBar').style.display = showPagination;
             document.getElementById('btnFloatingThumbnail').style.display = showPagination;
-            
             renderCurrentPage();
         };
 
@@ -408,10 +397,7 @@
             
             function getPos(clientX, clientY) {
                 const rect = canvas.getBoundingClientRect(); 
-                return { 
-                    x: (clientX - rect.left) * (canvas.width / rect.width), 
-                    y: (clientY - rect.top) * (canvas.height / rect.height) 
-                };
+                return { x: (clientX - rect.left) * (canvas.width / rect.width), y: (clientY - rect.top) * (canvas.height / rect.height) };
             }
             
             canvas.addEventListener('pointerdown', (e) => {
@@ -419,25 +405,39 @@
                 e.preventDefault(); 
                 const pos = getPos(e.clientX, e.clientY);
                 globalUndoStack.push({ index: pageIndex, imageData: ctx.getImageData(0, 0, canvas.width, canvas.height) });
-                if (globalUndoStack.length > 50) globalUndoStack.shift(); 
-                globalRedoStack = [];
-                isDrawing = true; 
-                lastX = pos.x; lastY = pos.y; 
+                if (globalUndoStack.length > 50) globalUndoStack.shift(); globalRedoStack = [];
+                isDrawing = true; lastX = pos.x; lastY = pos.y; 
                 draftCanvas.style.opacity = (currentTool === 'highlighter') ? (currentOpacity * 0.4) : currentOpacity;
             });
             
             canvas.addEventListener('pointermove', (e) => {
                 if (!isDrawing || e.pointerType === 'touch') return; 
+
+                const topMenu = document.getElementById('mainToolbar');
+                if (!isMenuHidden && topMenu) {
+                    const rect = topMenu.getBoundingClientRect();
+                    if (e.clientX >= rect.left - 10 && e.clientX <= rect.right + 10 && e.clientY >= rect.top - 10 && e.clientY <= rect.bottom + 10) {
+                        stopAction(e); return;
+                    }
+                }
+                const floatingBtn = document.querySelector('.floating-actions');
+                if (floatingBtn) {
+                    const fRect = floatingBtn.getBoundingClientRect();
+                    if (e.clientX >= fRect.left - 10 && e.clientX <= fRect.right + 10 && e.clientY >= fRect.top - 10 && e.clientY <= fRect.bottom + 10) {
+                        stopAction(e); return;
+                    }
+                }
+
                 e.preventDefault();
                 const pos = getPos(e.clientX, e.clientY); 
-                let pressure = e.pointerType === 'pen' && e.pressure > 0 ? e.pressure : 0.5;
+                
                 if (currentTool === 'eraser') {
                     ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.globalCompositeOperation = 'destination-out';
                     ctx.globalAlpha = 1.0; ctx.lineWidth = currentSize * 6;
                     ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(pos.x, pos.y); ctx.stroke();
                 } else {
                     draftCtx.lineCap = 'round'; draftCtx.lineJoin = 'round'; draftCtx.globalCompositeOperation = 'source-over'; draftCtx.globalAlpha = 1.0; 
-                    draftCtx.lineWidth = currentTool === 'highlighter' ? currentSize * 5 : (pressure * currentSize * 2.5) + 1; 
+                    draftCtx.lineWidth = currentTool === 'highlighter' ? currentSize * 5 : currentSize * 1.5; 
                     draftCtx.strokeStyle = currentColor;
                     draftCtx.beginPath(); draftCtx.moveTo(lastX, lastY); draftCtx.lineTo(pos.x, pos.y); draftCtx.stroke();
                 }
@@ -448,19 +448,14 @@
                 if (e && e.pointerType === 'touch') return;
                 if (isDrawing) {
                     if (currentTool !== 'eraser') {
-                        ctx.globalCompositeOperation = 'source-over'; 
-                        ctx.globalAlpha = currentTool === 'highlighter' ? currentOpacity * 0.4 : currentOpacity;
-                        ctx.drawImage(draftCanvas, 0, 0); 
-                        draftCtx.clearRect(0, 0, draftCanvas.width, draftCanvas.height);
+                        ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = currentTool === 'highlighter' ? currentOpacity * 0.4 : currentOpacity;
+                        ctx.drawImage(draftCanvas, 0, 0); draftCtx.clearRect(0, 0, draftCanvas.width, draftCanvas.height);
                     }
-                    isDrawing = false; 
-                    saveCurrentCanvasAsync();
+                    isDrawing = false; saveCurrentCanvasAsync();
                 }
             }
             
-            canvas.addEventListener('pointerup', stopAction); 
-            canvas.addEventListener('pointerleave', stopAction); 
-            canvas.addEventListener('pointercancel', stopAction);
+            canvas.addEventListener('pointerup', stopAction); canvas.addEventListener('pointerleave', stopAction); canvas.addEventListener('pointercancel', stopAction);
         }
 
         async function clearDraft() {
@@ -475,43 +470,40 @@
         }
 
         window.openThumbnailModal = function() {
-            const grid = document.getElementById('thumbnailGrid');
-            grid.innerHTML = '';
+            const grid = document.getElementById('thumbnailGrid'); grid.innerHTML = '';
             allPageUrls.forEach((url, index) => {
-                const div = document.createElement('div');
-                div.className = `thumbnail-item ${index === currentPageIndex ? 'active' : ''}`;
+                const div = document.createElement('div'); div.className = `thumbnail-item ${index === currentPageIndex ? 'active' : ''}`;
                 div.onclick = async () => {
                     closeThumbnailModal();
-                    if (index !== currentPageIndex) {
-                        await saveCurrentCanvasAsync();
-                        currentPageIndex = index;
-                        renderCurrentPage();
-                    }
+                    if (index !== currentPageIndex) { await saveCurrentCanvasAsync(); currentPageIndex = index; renderCurrentPage(); }
                 };
-                div.innerHTML = `<img src="${url}" loading="lazy"><div class="thumbnail-page-num">หน้า ${index + 1}</div>`;
-                grid.appendChild(div);
+                div.innerHTML = `<img src="${url}" loading="lazy"><div class="thumbnail-page-num">หน้า ${index + 1}</div>`; grid.appendChild(div);
             });
             document.getElementById('thumbnailModal').style.display = 'flex';
         }
-
         window.closeThumbnailModal = function() { document.getElementById('thumbnailModal').style.display = 'none'; }
-
         window.promptJumpPage = function() {
             const page = prompt(`ไปที่หน้า (1 - ${allPageUrls.length}):`, currentPageIndex + 1);
             if (page) {
                 const target = parseInt(page) - 1;
                 if (target >= 0 && target < allPageUrls.length && target !== currentPageIndex) {
-                    saveCurrentCanvasAsync().then(() => {
-                        currentPageIndex = target;
-                        renderCurrentPage();
-                    });
+                    saveCurrentCanvasAsync().then(() => { currentPageIndex = target; renderCurrentPage(); });
                 }
             }
         }
-
         window.openExportModal = function() { document.getElementById('exportModal').style.display = 'flex'; }
         window.closeExportModal = function() { document.getElementById('exportModal').style.display = 'none'; }
-        function loadImage(src) { return new Promise((res, rej) => { const img = new Image(); img.crossOrigin = "anonymous"; img.onload = () => res(img); img.onerror = rej; img.src = src; }); }
+
+        // --- 🛠️ แก้ปัญหาโหลดรูปจาก Base64 บน Safari (iOS/iPadOS) ---
+        function loadImage(src) { 
+            return new Promise((res, rej) => { 
+                const img = new Image(); 
+                if (!src.startsWith('data:')) { img.crossOrigin = "anonymous"; } // 👈 ห้ามใส่ anonymous ให้ data URL
+                img.onload = () => res(img); 
+                img.onerror = (e) => rej(new Error('โหลดภาพล้มเหลว')); 
+                img.src = src; 
+            }); 
+        }
 
         window.executeDownload = async function(format) {
             closeExportModal(); isSafeToLeave = true; 
@@ -525,8 +517,16 @@
                         const bgImg = await loadImage(allPageUrls[i]);
                         const exportCanvas = document.createElement('canvas'); exportCanvas.width = bgImg.naturalWidth; exportCanvas.height = bgImg.naturalHeight;
                         const ctx = exportCanvas.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height); ctx.drawImage(bgImg, 0, 0);
-                        const savedDraft = await localforage.getItem(`draft_${currentDocId}_page_${i}`);
-                        if (savedDraft) ctx.drawImage(await loadImage(savedDraft), 0, 0);
+                        
+                        // 🛠️ ดูดลายเส้นจากหน้ากระดานปัจจุบันโดยตรง (แก้ปัญหา iPad เซฟไม่ติด)
+                        const activeCanvas = document.getElementById(`canvas-page-${i}`);
+                        if (activeCanvas) {
+                            ctx.drawImage(activeCanvas, 0, 0);
+                        } else {
+                            const savedDraft = await localforage.getItem(`draft_${currentDocId}_page_${i}`);
+                            if (savedDraft) ctx.drawImage(await loadImage(savedDraft), 0, 0);
+                        }
+
                         const imgData = exportCanvas.toDataURL('image/jpeg', 0.85); const orientation = exportCanvas.width > exportCanvas.height ? 'l' : 'p';
                         if (i === 0) pdf = new jsPDF({ orientation, unit: 'px', format: [exportCanvas.width, exportCanvas.height] });
                         else pdf.addPage([exportCanvas.width, exportCanvas.height], orientation);
@@ -540,12 +540,20 @@
                     const ctx = exportCanvas.getContext('2d');
                     if (format === 'jpg') { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height); }
                     ctx.drawImage(bgImg, 0, 0);
-                    const savedDraft = await localforage.getItem(`draft_${currentDocId}_page_${currentPageIndex}`);
-                    if (savedDraft) ctx.drawImage(await loadImage(savedDraft), 0, 0);
+
+                    // 🛠️ ดูดลายเส้นจากหน้ากระดานปัจจุบันโดยตรง
+                    const activeCanvas = document.getElementById(`canvas-page-${currentPageIndex}`);
+                    if (activeCanvas) {
+                        ctx.drawImage(activeCanvas, 0, 0);
+                    } else {
+                        const savedDraft = await localforage.getItem(`draft_${currentDocId}_page_${currentPageIndex}`);
+                        if (savedDraft) ctx.drawImage(await loadImage(savedDraft), 0, 0);
+                    }
+
                     const link = document.createElement('a'); link.download = `แบบฝึกหัด-หน้า${currentPageIndex + 1}.${format}`;
                     link.href = exportCanvas.toDataURL(format === 'jpg' ? 'image/jpeg' : 'image/png', 1.0); link.click();
                 }
-            } catch (err) { alert('เกิดข้อผิดพลาดในการ Export'); }
+            } catch (err) { alert('เกิดข้อผิดพลาด: ' + err.message); }
             btnSave.innerHTML = originalText; isSafeToLeave = false;
         }
 
@@ -578,11 +586,8 @@
             btnSave.innerHTML = originalText; isSafeToLeave = false;
         }
 
-        // --- Strict Palm Rejection ---
         document.addEventListener('touchmove', function(e) {
-            if (e.target.closest('#workspace') && e.touches.length === 1) {
-                e.preventDefault();
-            }
+            if (e.target.closest('#workspace') && e.touches.length === 1) { e.preventDefault(); }
         }, { passive: false });
 
     </script>
