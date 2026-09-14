@@ -6,90 +6,97 @@
     <title>เลือกแบบฝึกหัด</title>
     <style>
         :root {
-            --primary: #007AFF; --primary-hover: #005BB5; --bg: #F5F5F7; --surface: #FFFFFF;
-            --text-main: #1D1D1F; --text-muted: #86868B; --border: #E5E5EA; --radius-lg: 20px; --radius-md: 14px;
+            --primary: #007AFF; --bg: #F2F2F7; --surface: #FFFFFF;
+            --text-main: #1C1C1E; --text-muted: #8E8E93; --border: #C6C6C8; /* สีขอบเข้มขึ้นให้เห็นชัดเจน */
+            --radius-lg: 20px; --radius-md: 12px;
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; }
         body { background-color: var(--bg); color: var(--text-main); margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
         
-        /* 📦 Master Container - คุมความกว้างให้อยู่ตรงกลางเสมอ */
-        .container { max-width: 1000px; margin: 0 auto; padding: env(safe-area-inset-top) 5% 40px; padding-top: 40px; }
-        
-        /* Header */
-        .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; gap: 16px; flex-wrap: wrap; }
-        .app-title { font-size: 32px; font-weight: 700; margin: 0; letter-spacing: -0.5px; display: flex; align-items: center; gap: 12px; }
-        
-        /* Buttons */
-        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 15px; font-weight: 600; border-radius: 20px; cursor: pointer; transition: 0.2s; border: none; min-height: 44px; padding: 0 20px; }
+        .container { max-width: 1000px; margin: 0 auto; padding: env(safe-area-inset-top) 24px 24px; padding-top: 40px; }
+
+        /* 🗂️ Top Panel (ตีกรอบรวมส่วนหัวทั้งหมด ไม่ให้ลอย) */
+        .top-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 32px;
+            margin-bottom: 32px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        }
+
+        .app-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; }
+        .app-title { font-size: 28px; font-weight: 700; margin: 0; letter-spacing: -0.5px; display: flex; align-items: center; gap: 12px; }
+
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 15px; font-weight: 600; border-radius: 12px; cursor: pointer; transition: 0.2s; border: none; min-height: 44px; padding: 0 20px; }
         .btn:active { transform: scale(0.95); }
-        .btn-outline { background: var(--surface); color: var(--text-main); border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .btn-outline { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
         .btn-primary { background: var(--primary); color: #fff; }
         .btn-danger { background: #FFF0F0; color: #FF3B30; border: 1px solid #FFE5E5; }
-        
-        /* Admin Banner */
-        .admin-controls { display: none; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; background: #E8F5E9; padding: 16px 24px; border-radius: 20px; border: 1px solid #C8E6C9; margin-bottom: 32px; }
-        .admin-controls span { color: #2E7D32; font-weight: 600; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+
+        .admin-controls { display: none; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; background: #E8F5E9; padding: 16px 20px; border-radius: 16px; border: 1px solid #C8E6C9; margin-bottom: 24px; }
+        .admin-controls span { color: #2E7D32; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px; }
         .admin-actions { display: flex; gap: 8px; }
-        
-        /* Search */
-        .search-wrapper { position: relative; margin-bottom: 40px; width: 100%; max-width: 500px; }
-        .search-input { width: 100%; padding: 16px 20px 16px 50px; font-size: 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: 0 4px 20px rgba(0,0,0,0.03); outline: none; transition: 0.2s; }
-        .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(0,122,255,0.1); }
-        .search-icon { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); font-size: 18px; color: var(--text-muted); pointer-events: none; }
-        
-        /* Gallery */
-        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 24px; }
-        .card { background: var(--surface); border-radius: var(--radius-lg); padding: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.04); border: 1px solid var(--border); cursor: pointer; transition: 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); display: flex; flex-direction: column; }
-        .card:hover { box-shadow: 0 12px 24px rgba(0,0,0,0.08); transform: translateY(-4px); }
+
+        .search-wrapper { position: relative; width: 100%; }
+        .search-input { width: 100%; padding: 16px 20px 16px 48px; font-size: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg); color: var(--text-main); outline: none; transition: 0.2s; }
+        .search-input:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(0,122,255,0.1); }
+        .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 18px; color: var(--text-muted); pointer-events: none; }
+
+        /* 🖼️ Gallery */
+        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 24px; padding-bottom: 40px; }
+        .card { background: var(--surface); border-radius: var(--radius-lg); padding: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.03); border: 1px solid var(--border); cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; }
+        .card:hover { border-color: #A1A1A6; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
         .card:active { transform: scale(0.96); }
-        .card-img-wrapper { position: relative; width: 100%; aspect-ratio: 3/4; border-radius: var(--radius-md); overflow: hidden; background: #F9F9F9; margin-bottom: 16px; border: 1px solid rgba(0,0,0,0.03); }
+        .card-img-wrapper { position: relative; width: 100%; aspect-ratio: 3/4; border-radius: 10px; overflow: hidden; background: #F2F2F7; margin-bottom: 16px; border: 1px solid rgba(0,0,0,0.05); }
         .card-img-wrapper img { width: 100%; height: 100%; object-fit: cover; }
-        .page-badge { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; }
-        .card-info { padding: 0 8px 8px; }
-        .card-title { margin: 0 0 8px 0; font-size: 18px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main); }
-        .card-meta { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); font-weight: 500; }
-        .type-tag { padding: 4px 8px; border-radius: 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }
+        .page-badge { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.7); color: white; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); }
+        .card-info { padding: 0 4px; }
+        .card-title { margin: 0 0 8px 0; font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main); }
+        .card-meta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); font-weight: 600; }
+        .type-tag { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
         .type-tag.pdf { background: #FFE5E5; color: #FF3B30; }
         .type-tag.img { background: #E5F0FF; color: var(--primary); }
 
         /* Modal */
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
-        .modal-content { background: var(--surface); padding: 32px; border-radius: 24px; width: 90%; max-width: 400px; box-shadow: 0 24px 48px rgba(0,0,0,0.2); }
-        .modal-title { margin: 0 0 24px; text-align: center; font-size: 24px; font-weight: 700; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
+        .modal-content { background: var(--surface); padding: 32px; border-radius: 24px; width: 90%; max-width: 400px; box-shadow: 0 24px 48px rgba(0,0,0,0.2); border: 1px solid var(--border); }
+        .modal-title { margin: 0 0 24px; text-align: center; font-size: 22px; font-weight: 700; }
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: var(--text-muted); }
-        .form-input { width: 100%; padding: 14px 16px; font-size: 16px; border: 1px solid var(--border); border-radius: var(--radius-md); outline: none; background: #fafafa; transition: 0.2s; }
+        .form-input { width: 100%; padding: 14px 16px; font-size: 16px; border: 1px solid var(--border); border-radius: 12px; outline: none; background: var(--bg); transition: 0.2s; }
         .form-input:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(0,122,255,0.1); }
         .modal-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 32px; }
-        .btn-full { width: 100%; min-height: 50px; font-size: 16px; }
+        .btn-full { width: 100%; min-height: 48px; font-size: 16px; }
         .error-msg { color: #FF3B30; font-size: 14px; margin-bottom: 16px; display: none; text-align: center; font-weight: 500; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <!-- ส่วนหัว -->
-        <header class="app-header">
-            <h1 class="app-title">📖 คลังแบบฝึกหัด</h1>
-            <button class="btn btn-outline" id="adminTrigger">⚙️ จัดการระบบ</button>
-        </header>
+        
+        <!-- 🗂️ ส่วนหัวตีกรอบรวมกัน -->
+        <div class="top-panel">
+            <header class="app-header">
+                <h1 class="app-title">📖 คลังแบบฝึกหัด</h1>
+                <button class="btn btn-outline" id="adminTrigger">⚙️ จัดการระบบ</button>
+            </header>
 
-        <!-- ส่วนของแอดมิน (จะซ่อนไว้ถ้าไม่ได้ล็อกอิน) -->
-        <div class="admin-controls" id="adminBanner">
-            <span>🔒 คุณอยู่ในระบบแอดมิน</span>
-            <div class="admin-actions">
-                <button class="btn btn-primary" onclick="window.location.href='admin.html'">จัดการรูปภาพ</button>
-                <button class="btn btn-danger" onclick="logout()">ออกจากระบบ</button>
+            <div class="admin-controls" id="adminBanner">
+                <span>🔒 คุณอยู่ในระบบแอดมิน</span>
+                <div class="admin-actions">
+                    <button class="btn btn-primary" onclick="window.location.href='admin.html'">จัดการไฟล์</button>
+                    <button class="btn btn-danger" onclick="logout()">ออกจากระบบ</button>
+                </div>
+            </div>
+
+            <div class="search-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" class="search-input" placeholder="ค้นหาชื่อแบบฝึกหัด...">
             </div>
         </div>
 
-        <!-- ช่องค้นหา -->
-        <div class="search-wrapper">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="searchInput" class="search-input" placeholder="ค้นหาชื่อแบบฝึกหัด...">
-        </div>
-
-        <!-- กล่องใส่การ์ด -->
+        <!-- 🖼️ ส่วนแสดงผลการ์ด -->
         <div class="gallery" id="gallery">
             <p style="grid-column: 1/-1; color: var(--text-muted); font-size: 16px; text-align: center; padding: 40px;">⏳ กำลังโหลดข้อมูล...</p>
         </div>
