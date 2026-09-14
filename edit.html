@@ -29,13 +29,14 @@
         .btn-icon.active { background: var(--surface); box-shadow: 0 2px 8px rgba(0,0,0,0.06); color: var(--primary); }
 
         /* Colors & Sliders */
-        .color-dot { width: 28px; height: 28px; border-radius: 50%; border: none; cursor: pointer; margin: 0 2px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1); transition: 0.2s; }
+        .color-dot { width: 28px; height: 28px; border-radius: 50%; border: none; cursor: pointer; margin: 0 2px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1); transition: 0.2s; display: inline-flex; justify-content: center; align-items: center; }
         .color-dot.active { transform: scale(1.15); box-shadow: 0 0 0 2px var(--pill), 0 0 0 4px var(--primary); }
         
-        /* 🛑 ซ่อน Input สี ตัดปัญหา Scribble ของ iPadOS */
-        .custom-picker-btn { position: relative; overflow: hidden; padding: 0; display: flex; justify-content: center; align-items: center; }
-        .custom-picker-btn::before { content: ''; position: absolute; inset: -2px; z-index: 0; background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red); }
-        #customColorDisplay { position: absolute; inset: 3px; z-index: 1; border-radius: 50%; border: 2px solid rgba(255,255,255,0.8); background: #34C759; transition: 0.2s; }
+        /* ใช้ Color Picker มาตรฐานของระบบ เพื่อให้ iPad เปิดได้ 100% */
+        .color-picker-wrapper { padding: 0; background: none; overflow: hidden; }
+        .color-picker { width: 100%; height: 100%; border: none; border-radius: 50%; cursor: pointer; padding: 0; background: none; outline: none; }
+        .color-picker::-webkit-color-swatch-wrapper { padding: 0; }
+        .color-picker::-webkit-color-swatch { border: none; border-radius: 50%; }
         
         .slider-wrapper { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #8E8E93; margin: 0 8px; }
         input[type="range"] { -webkit-appearance: none; width: 70px; height: 6px; background: rgba(0,0,0,0.1); border-radius: 3px; outline: none; }
@@ -66,7 +67,7 @@
         .btn-modal.pdf { background: #FF3B30; } .btn-modal.png { background: var(--primary); } .btn-modal.jpg { background: #34C759; } .btn-modal.orig { background: #8E8E93; }
         .btn-modal.cancel { background: var(--pill); color: var(--text); margin-top: 16px; }
 
-        /* Thumbnails (แก้เลื่อนแล้ว) */
+        /* Thumbnails */
         #thumbnailModal .modal-card { max-width: 800px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; padding-bottom: 16px; }
         .thumb-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-shrink: 0; }
         .thumb-head h3 { margin: 0; }
@@ -88,7 +89,6 @@
         body.dark-theme .btn-icon.active { background: #3A3A3C; color: #0A84FF; }
         body.dark-theme input[type="range"] { background: rgba(255,255,255,0.2); }
         body.dark-theme .canvas-wrapper { box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
-        body.dark-theme #customColorDisplay { border-color: #000; }
     </style>
 </head>
 <body>
@@ -123,14 +123,14 @@
                 <button class="color-dot" style="background: #FF3B30;" onclick="setColor('#FF3B30', this)"></button>
                 <button class="color-dot" style="background: #007AFF;" onclick="setColor('#007AFF', this)"></button>
                 
-                <!-- 🛑 ปุ่มเลือกสีแบบซ่อน Input ไว้ด้านใน iPad จะไม่เกิด Scribble -->
-                <button class="color-dot custom-picker-btn" id="customColorWrapper" onclick="document.getElementById('hiddenColorPicker').click()">
-                    <div id="customColorDisplay"></div>
-                    <input type="color" id="hiddenColorPicker" value="#34C759" 
-                           style="position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none;"
-                           oninput="updateCustomColor(this.value)" 
-                           onchange="updateCustomColor(this.value)">
-                </button>
+                <!-- 🛑 กลับมาใช้ Color Picker ของระบบ และหน่วงเวลาล็อกการวาดให้นานขึ้นเพื่อป้องกันเส้นผีหลอกตอนเลือกสี -->
+                <div class="color-dot color-picker-wrapper" id="customColorWrapper">
+                    <input type="color" class="color-picker" id="colorPicker" value="#34C759" 
+                           onclick="window.lockDrawing(1500);" 
+                           onblur="window.lockDrawing(1000);"
+                           oninput="setColor(this.value, document.getElementById('customColorWrapper')); window.lockDrawing(1000);" 
+                           onchange="setColor(this.value, document.getElementById('customColorWrapper')); window.lockDrawing(1000);">
+                </div>
             </div>
             <div class="tool-group">
                 <div class="slider-wrapper"><span>◍</span><input type="range" id="sizeSlider" min="1" max="50" value="5" oninput="currentSize = parseInt(this.value); window.lockDrawing(500);"></div>
@@ -195,6 +195,7 @@
     </script>
 
     <script>
+        // 🛡️ ระบบแช่แข็งกระดาษ (Deep Cooldown) 
         window.isDrawingLocked = false;
         let drawLockTimer = null;
         window.lockDrawing = function(ms = 500) {
@@ -244,13 +245,6 @@
             document.querySelectorAll('.color-dot').forEach(b => b.classList.remove('active'));
             if(el) el.classList.add('active');
             if(currentTool === 'eraser') setTool('pen', document.getElementById('btnPen'));
-        }
-
-        // 🛑 ฟังก์ชันอัปเดตสีจากช่อง Color Picker 
-        window.updateCustomColor = function(val) {
-            document.getElementById('customColorDisplay').style.background = val;
-            setColor(val, document.getElementById('customColorWrapper'));
-            window.lockDrawing(500);
         }
 
         function undo() {
@@ -323,6 +317,7 @@
             });
         }
 
+        // 🛑 สนามพลังป้องกันพื้นที่ UI ล็อกพิกัด
         function isProtectedZone(x, y) {
             const tb = document.getElementById('mainToolbar');
             if (!menuHidden && tb) { 
@@ -346,8 +341,11 @@
             cvs.onpointerdown = e => {
                 if (e.pointerType === 'touch') return;
                 
+                // ถ้าระบบโดนแช่แข็งจากการกดปุ่ม หรือปลายปากกาลอยอยู่ ให้ตัดสิทธิ์การวาดทันที
                 if (window.isDrawingLocked) return;
                 if (e.buttons === 0) return;
+                
+                // ตรวจสอบว่าจิ้มลงบนกระดาษจริงๆ ไม่ใช่เขตหวงห้าม
                 if (e.target.tagName !== 'CANVAS' || isProtectedZone(e.clientX, e.clientY)) return;
 
                 e.preventDefault(); const p = getP(e.clientX, e.clientY);
