@@ -4,218 +4,159 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>พื้นที่จดบันทึก</title>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
-
     <style>
         * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; box-sizing: border-box; -webkit-tap-highlight-color: transparent;}
         input { -webkit-user-select: auto; user-select: auto; }
         
-        :root { 
-            --primary: #007AFF; --danger: #FF3B30; --bg: #F4F5F7; --surface: #FFFFFF; 
-            --text: #1D1D1F; --border: #E5E5EA; --pill-bg: #F0F0F5;
-        }
-
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; 
-            background-color: var(--bg); text-align: center; margin: 0; padding: env(safe-area-inset-top) 16px 40px; 
-            transition: background-color 0.3s; overscroll-behavior-y: none; 
-        }
+        :root { --primary: #007AFF; --danger: #FF3B30; --bg: #EAEBEE; --surface: #FFFFFF; --text: #1C1C1E; --border: #E5E5EA; --pill: #F2F2F7; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; background-color: var(--bg); text-align: center; margin: 0; padding: env(safe-area-inset-top) 16px 20px; transition: background-color 0.3s; overscroll-behavior-y: none; }
         
-        /* --- 🎨 Floating Toolbar --- */
-        .header-tools { 
-            position: sticky; top: 16px; z-index: 1000; width: 100%; max-width: 900px; margin: 0 auto 24px;
-            background: rgba(255, 255, 255, 0.98); /* ทำให้ทึบขึ้นเพื่อป้องกันการมองทะลุ */
-            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-            padding: 12px 20px; border-radius: 30px; box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-            display: flex; flex-direction: column; gap: 12px; border: 1px solid rgba(0,0,0,0.05);
-            transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            touch-action: none; /* ป้องกันการเลื่อนจอเมื่อแตะเมนู */
-        }
-        .header-tools.hidden { opacity: 0; pointer-events: none; transform: translateY(-20px) scale(0.95); }
+        /* 🛠️ Floating Toolbar */
+        .toolbar-main { position: sticky; top: 16px; z-index: 1000; width: 100%; max-width: 900px; margin: 0 auto 24px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: 10px 16px; border-radius: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.06); display: flex; flex-direction: column; gap: 10px; border: 1px solid rgba(0,0,0,0.04); transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); touch-action: none; }
+        .toolbar-main.hidden { opacity: 0; pointer-events: none; transform: translateY(-20px) scale(0.96); }
+        .toolbar-row { display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 8px; }
+        .tool-group { display: flex; align-items: center; background: var(--pill); padding: 4px; border-radius: 18px; gap: 4px; }
         
-        .toolbar-row { display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 12px; }
-        .tool-group { display: flex; align-items: center; background: var(--pill-bg); padding: 4px; border-radius: 20px; gap: 4px; }
+        /* Buttons */
+        .btn { display: inline-flex; align-items: center; justify-content: center; background: transparent; color: var(--text); border: none; padding: 0 16px; height: 36px; border-radius: 14px; font-size: 15px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn:active:not(:disabled) { transform: scale(0.92); background: rgba(0,0,0,0.05); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-primary { background: var(--primary); color: white; border-radius: 14px; }
+        .btn-primary:active { opacity: 0.9; }
+        .btn-icon { width: 36px; height: 36px; padding: 0; border-radius: 14px; font-size: 18px; }
+        .btn-icon.active { background: var(--surface); box-shadow: 0 2px 8px rgba(0,0,0,0.06); color: var(--primary); }
+
+        /* Colors & Sliders */
+        .color-dot { width: 28px; height: 28px; border-radius: 50%; border: none; cursor: pointer; margin: 0 2px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1); transition: 0.2s; }
+        .color-dot.active { transform: scale(1.15); box-shadow: 0 0 0 2px var(--pill), 0 0 0 4px var(--primary); }
+        .color-picker { width: 28px; height: 28px; border: none; border-radius: 50%; cursor: pointer; padding: 0; background: none; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1); }
+        .color-picker::-webkit-color-swatch-wrapper { padding: 0; }
+        .color-picker::-webkit-color-swatch { border: none; border-radius: 50%; }
         
-        .btn-action {
-            background: transparent; color: var(--text); border: none; padding: 0 16px; height: 36px;
-            border-radius: 18px; font-size: 15px; font-weight: 600; cursor: pointer; transition: 0.2s;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .btn-action:active:not(:disabled) { transform: scale(0.92); background: rgba(0,0,0,0.05); }
-        .btn-action:disabled { opacity: 0.4; cursor: not-allowed; }
-        
-        .btn-primary {
-            background: var(--primary); color: white; border: none; padding: 0 20px; height: 36px;
-            border-radius: 18px; font-size: 15px; font-weight: 600; cursor: pointer; transition: 0.2s;
-        }
-        .btn-primary:active { transform: scale(0.94); opacity: 0.9; }
-
-        .tool-btn { 
-            background: transparent; color: #555; border: none; 
-            width: 40px; height: 40px; border-radius: 16px; cursor: pointer; transition: 0.2s;
-            display: flex; justify-content: center; align-items: center; font-size: 20px; 
-        }
-        .tool-btn.active { background: var(--surface); box-shadow: 0 2px 8px rgba(0,0,0,0.08); color: var(--primary); }
-
-        .color-dot {
-            width: 28px; height: 28px; border-radius: 50%; border: none; cursor: pointer; margin: 0 4px;
-            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1); transition: 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .color-dot.active { transform: scale(1.2); box-shadow: 0 0 0 2px var(--pill-bg), 0 0 0 4px var(--primary); }
-        .color-picker-wrapper { position: relative; display: inline-flex; align-items: center; justify-content: center; margin: 0 4px; }
-        .color-picker-wrapper input[type="color"] { 
-            width: 28px; height: 28px; border: none; border-radius: 50%; cursor: pointer; padding: 0; 
-            background: none; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1); transition: 0.2s;
-        }
-        .color-picker-wrapper input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
-        .color-picker-wrapper input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; }
-        .color-picker-wrapper.active input[type="color"] { transform: scale(1.2); box-shadow: 0 0 0 2px var(--pill-bg), 0 0 0 4px var(--primary); }
-
-        .slider-group { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #8E8E93; margin: 0 8px; }
-        input[type="range"] { -webkit-appearance: none; width: 80px; height: 6px; background: rgba(0,0,0,0.1); border-radius: 3px; outline: none; cursor: pointer; }
+        .slider-wrapper { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #8E8E93; margin: 0 8px; }
+        input[type="range"] { -webkit-appearance: none; width: 70px; height: 6px; background: rgba(0,0,0,0.1); border-radius: 3px; outline: none; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: 0.2s; }
         input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.2); }
 
-        #pageIndicator { font-size: 15px; font-weight: 600; color: var(--text); min-width: 50px; text-align: center; cursor: pointer; padding: 0 8px; border-radius: 12px;}
-        #pageIndicator:active { background: #E5E5EA; }
+        #pageIndicator { font-size: 14px; font-weight: 600; min-width: 44px; text-align: center; cursor: pointer; padding: 0 8px; }
+        #pageIndicator:active { opacity: 0.6; }
 
+        /* Workspace */
         #workspace { width: 100%; max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;}
-        .canvas-wrapper { position: relative; background: var(--surface); box-shadow: 0 12px 48px rgba(0,0,0,0.08); border-radius: 12px; overflow: hidden; }
+        .canvas-wrapper { position: relative; background: var(--surface); box-shadow: 0 8px 32px rgba(0,0,0,0.05); border-radius: 12px; overflow: hidden; }
         .bg-img { width: 100%; display: block; user-select: none; pointer-events: none; }
-        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; touch-action: auto; cursor: crosshair; }
+        canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: auto; cursor: crosshair; }
         .draft-canvas { pointer-events: none; } 
 
-        .floating-actions {
-            position: fixed; bottom: 24px; right: 24px; z-index: 1000;
-            display: flex; flex-direction: column; gap: 12px; 
-            touch-action: none;
-        }
-        .btn-floating {
-            width: 54px; height: 54px; border-radius: 27px;
-            background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            border: 1px solid var(--border); box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-            font-size: 24px; display: flex; justify-content: center; align-items: center;
-            cursor: pointer; transition: 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .btn-floating:active { transform: scale(0.85); }
+        /* Floating Actions */
+        .fab-container { position: fixed; bottom: 24px; right: 24px; z-index: 1000; display: flex; flex-direction: column; gap: 12px; touch-action: none; }
+        .fab { width: 50px; height: 50px; border-radius: 25px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid var(--border); box-shadow: 0 8px 24px rgba(0,0,0,0.1); font-size: 20px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s; }
+        .fab:active { transform: scale(0.85); }
 
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 10000; justify-content: center; align-items: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-        .modal-content { background: var(--surface); padding: 32px; border-radius: 24px; width: 90%; max-width: 380px; box-shadow: 0 24px 48px rgba(0,0,0,0.2); text-align: center; display: flex; flex-direction: column; }
-        .modal-content h3 { margin: 0 0 24px; font-size: 22px; font-weight: 700; }
-        .btn-export { display: block; width: 100%; padding: 16px; margin-bottom: 12px; font-size: 16px; font-weight: 600; border-radius: 16px; color: white; border: none; cursor: pointer; transition: 0.2s;}
-        .btn-export:active { transform: scale(0.97); }
-        .btn-export.pdf { background: #FF3B30; }
-        .btn-export.png { background: var(--primary); }
-        .btn-export.jpg { background: #34C759; }
-        .btn-export.original { background: #8E8E93; }
-        .btn-export.cancel { background: #F0F0F5; color: var(--text); margin-top: 12px; }
+        /* Modals */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 10000; justify-content: center; align-items: center; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
+        .modal-card { background: var(--surface); padding: 24px; border-radius: 24px; width: 90%; max-width: 360px; box-shadow: 0 24px 48px rgba(0,0,0,0.15); text-align: center; }
+        .modal-card h3 { margin: 0 0 20px; font-size: 20px; font-weight: 600; }
+        .btn-modal { display: block; width: 100%; padding: 14px; margin-bottom: 10px; font-size: 15px; font-weight: 600; border-radius: 14px; color: white; border: none; cursor: pointer; transition: 0.2s;}
+        .btn-modal:active { transform: scale(0.96); }
+        .btn-modal.pdf { background: #FF3B30; } .btn-modal.png { background: var(--primary); } .btn-modal.jpg { background: #34C759; } .btn-modal.orig { background: #8E8E93; }
+        .btn-modal.cancel { background: var(--pill); color: var(--text); margin-top: 16px; }
 
-        #thumbnailModal .modal-content { max-width: 800px; width: 90%; max-height: 85vh; padding: 24px; }
-        .thumbnail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .thumbnail-header h3 { margin: 0; font-size: 20px; }
-        .btn-close-modal { background: #F0F0F5; border: none; width: 36px; height: 36px; border-radius: 18px; font-size: 16px; cursor: pointer; color: #555; transition: 0.2s;}
-        .btn-close-modal:active { transform: scale(0.9); }
-        .thumbnail-grid-container { overflow-y: auto; flex: 1; padding: 4px; }
-        .thumbnail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 16px; }
-        .thumbnail-item { cursor: pointer; border-radius: 12px; overflow: hidden; border: 3px solid transparent; transition: 0.2s; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-        .thumbnail-item:active { transform: scale(0.95); }
-        .thumbnail-item.active { border-color: var(--primary); }
-        .thumbnail-item img { width: 100%; display: block; object-fit: cover; height: 140px; background: #f9f9f9; }
-        .thumbnail-page-num { padding: 8px; font-size: 14px; font-weight: 600; background: #fafafa; border-top: 1px solid #eee; color: #555; text-align: center;}
+        /* Thumbnails */
+        #thumbModal .modal-card { max-width: 800px; max-height: 85vh; display: flex; flex-direction: column; }
+        .thumb-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .thumb-head h3 { margin: 0; }
+        .btn-close { background: var(--pill); border: none; width: 32px; height: 32px; border-radius: 16px; cursor: pointer; transition: 0.2s; }
+        .btn-close:active { transform: scale(0.85); }
+        .thumb-grid { overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 12px; padding: 4px; }
+        .thumb-item { border-radius: 10px; overflow: hidden; border: 2px solid transparent; cursor: pointer; transition: 0.2s; background: var(--surface); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .thumb-item:active { transform: scale(0.95); }
+        .thumb-item.active { border-color: var(--primary); }
+        .thumb-item img { width: 100%; height: 130px; object-fit: cover; display: block; background: #fafafa; }
+        .thumb-num { padding: 6px; font-size: 12px; font-weight: 600; background: #fafafa; color: #555; }
 
-        body.dark-theme { background-color: #000000; --bg: #000000; --surface: #1C1C1E; --text: #FFFFFF; --border: #38383A; --pill-bg: #2C2C2E; }
-        body.dark-theme .header-tools { background: rgba(28, 28, 30, 0.98); border-color: rgba(255,255,255,0.1); }
-        body.dark-theme .btn-action, body.dark-theme .btn-close-modal { color: #fff; }
-        body.dark-theme .btn-action:active:not(:disabled) { background: rgba(255,255,255,0.1); }
-        body.dark-theme .tool-btn.active { background: #3A3A3C; color: #0A84FF; }
+        /* Dark Mode */
+        body.dark-theme { background-color: #000000; --surface: #1C1C1E; --text: #FFFFFF; --border: #38383A; --pill: #2C2C2E; }
+        body.dark-theme .toolbar-main, body.dark-theme .fab { background: rgba(28, 28, 30, 0.95); border-color: rgba(255,255,255,0.1); color: #fff; }
+        body.dark-theme .btn, body.dark-theme .btn-close { color: #fff; }
+        body.dark-theme .btn:active:not(:disabled) { background: rgba(255,255,255,0.1); }
+        body.dark-theme .btn-icon.active { background: #3A3A3C; color: #0A84FF; }
         body.dark-theme input[type="range"] { background: rgba(255,255,255,0.2); }
-        body.dark-theme .canvas-wrapper { box-shadow: 0 12px 48px rgba(0,0,0,0.6); }
-        body.dark-theme .btn-floating { background: rgba(44, 44, 46, 0.98); border-color: rgba(255,255,255,0.1); color: #fff; }
-        body.dark-theme .thumbnail-item { background: #2C2C2E; }
-        body.dark-theme .thumbnail-page-num { background: #1C1C1E; color: #fff; border-color: #38383A; }
+        body.dark-theme .canvas-wrapper { box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
-
-    <div class="header-tools" id="mainToolbar">
+    <div class="toolbar-main" id="mainToolbar" onpointerdown="event.stopPropagation()" onpointermove="event.stopPropagation()">
         <div class="toolbar-row" style="justify-content: space-between;">
             <div class="tool-group" style="background: transparent;">
-                <button class="btn-action" onclick="goBack()" style="color: var(--primary);">‹ แกลลอรี่</button>
+                <button class="btn" onclick="goBack()" style="color: var(--primary);">‹ กลับ</button>
             </div>
             <div class="tool-group" id="paginationBar" style="display: none;">
-                <button class="btn-action" id="btnPrevPage" onclick="prevPage()">◀</button>
-                <span id="pageIndicator" onclick="promptJumpPage()" title="แตะเพื่อข้ามหน้า">1 / 1</span>
-                <button class="btn-action" id="btnNextPage" onclick="nextPage()">▶</button>
+                <button class="btn btn-icon" id="btnPrevPage" onclick="prevPage()">◀</button>
+                <span id="pageIndicator" onclick="promptJumpPage()">1 / 1</span>
+                <button class="btn btn-icon" id="btnNextPage" onclick="nextPage()">▶</button>
             </div>
             <div class="tool-group" style="background: transparent; gap: 8px;">
-                <button class="btn-action" onclick="clearDraft()" style="color: var(--danger); background: var(--pill-bg);">ล้างหน้า</button>
-                <button class="btn-primary" onclick="openExportModal()">ส่งออก</button>
+                <button class="btn" onclick="clearDraft()" style="color: var(--danger); background: var(--pill);">ล้าง</button>
+                <button class="btn btn-primary" onclick="openExportModal()">ส่งออก</button>
             </div>
         </div>
         
         <div class="toolbar-row" style="justify-content: center;">
             <div class="tool-group">
-                <button class="btn-action" onclick="undo()" title="ย้อนกลับ">↩</button>
-                <button class="btn-action" onclick="redo()" title="ทำซ้ำ">↪</button>
+                <button class="btn btn-icon" onclick="undo()">↩</button>
+                <button class="btn btn-icon" onclick="redo()">↪</button>
             </div>
             <div class="tool-group">
-                <button class="tool-btn active" id="btnPen" onclick="setTool('pen', this)" title="ปากกา">🖊️</button>
-                <button class="tool-btn" id="btnHighlighter" onclick="setTool('highlighter', this)" title="ไฮไลท์">🖍️</button>
-                <button class="tool-btn" id="btnEraser" onclick="setTool('eraser', this)" title="ยางลบ">🧽</button>
+                <button class="btn btn-icon active" id="btnPen" onclick="setTool('pen', this)">🖊️</button>
+                <button class="btn btn-icon" id="btnHighlighter" onclick="setTool('highlighter', this)">🖍️</button>
+                <button class="btn btn-icon" id="btnEraser" onclick="setTool('eraser', this)">🧽</button>
             </div>
             <div class="tool-group">
                 <button class="color-dot active" style="background: #1D1D1F;" onclick="setColor('#1D1D1F', this)"></button>
                 <button class="color-dot" style="background: #FF3B30;" onclick="setColor('#FF3B30', this)"></button>
                 <button class="color-dot" style="background: #007AFF;" onclick="setColor('#007AFF', this)"></button>
-                <div class="color-picker-wrapper" id="customColorWrapper">
-                    <input type="color" id="colorPicker" value="#34C759" onchange="setColor(this.value, document.getElementById('customColorWrapper'))">
+                <div class="color-dot color-picker-wrapper" id="customColorWrapper">
+                    <input type="color" class="color-picker" id="colorPicker" value="#34C759" onchange="setColor(this.value, document.getElementById('customColorWrapper'))">
                 </div>
             </div>
             <div class="tool-group">
-                <div class="slider-group" title="ขนาดหัวปากกา">
-                    <span style="font-size: 16px;">◍</span>
-                    <input type="range" id="sizeSlider" min="1" max="50" value="5" oninput="currentSize = parseInt(this.value)">
-                </div>
-                <div class="slider-group" title="ความโปร่งใส">
-                    <span style="font-size: 16px;">◑</span>
-                    <input type="range" id="opacitySlider" min="0.1" max="1" step="0.1" value="1" oninput="currentOpacity = parseFloat(this.value)">
-                </div>
+                <div class="slider-wrapper"><span>◍</span><input type="range" id="sizeSlider" min="1" max="50" value="5" oninput="currentSize = parseInt(this.value)"></div>
+                <div class="slider-wrapper"><span>◑</span><input type="range" id="opacitySlider" min="0.1" max="1" step="0.1" value="1" oninput="currentOpacity = parseFloat(this.value)"></div>
             </div>
             <div class="tool-group">
-                <button class="btn-action" id="btnTheme" onclick="toggleTheme()" title="สลับโหมดสี">🌙</button>
+                <button class="btn btn-icon" onclick="toggleTheme()">🌙</button>
             </div>
         </div>
     </div>
 
-    <div class="floating-actions">
-        <button class="btn-floating" id="btnFloatingThumbnail" onclick="openThumbnailModal()" title="ดูทุกหน้า" style="display: none;">🎛️</button>
-        <button class="btn-floating" onclick="toggleMenu()" title="ซ่อน/แสดงเมนู"><span id="toggleIcon">🔽</span></button>
+    <div class="fab-container" onpointerdown="event.stopPropagation()" onpointermove="event.stopPropagation()">
+        <button class="fab" id="btnThumb" onclick="openThumbnailModal()" style="display: none;">🎛️</button>
+        <button class="fab" onclick="toggleMenu()"><span id="toggleIcon">🔽</span></button>
     </div>
 
     <div id="workspace"></div>
 
-    <div id="exportModal" class="modal-overlay">
-        <div class="modal-content">
-            <h3>💾 เลือกรูปแบบไฟล์</h3>
-            <button class="btn-export pdf" onclick="executeDownload('pdf')">📄 PDF (รวมทุกหน้าพร้อมลายเส้น)</button>
-            <button class="btn-export png" onclick="executeDownload('png')">🖼️ PNG (เฉพาะหน้านี้พร้อมลายเส้น)</button>
-            <button class="btn-export jpg" onclick="executeDownload('jpg')">📸 JPG (เฉพาะหน้านี้พร้อมลายเส้น)</button>
-            <button class="btn-export original" onclick="downloadOriginal()">📥 โหลดต้นฉบับ (ไฟล์เปล่า)</button>
-            <button class="btn-export cancel" onclick="closeExportModal()">ยกเลิก</button>
+    <div id="exportModal" class="modal">
+        <div class="modal-card">
+            <h3>💾 รูปแบบไฟล์</h3>
+            <button class="btn-modal pdf" onclick="executeDownload('pdf')">📄 PDF (รวมทุกหน้า)</button>
+            <button class="btn-modal png" onclick="executeDownload('png')">🖼️ PNG (หน้านี้)</button>
+            <button class="btn-modal jpg" onclick="executeDownload('jpg')">📸 JPG (หน้านี้)</button>
+            <button class="btn-modal orig" onclick="downloadOriginal()">📥 ต้นฉบับ (ไฟล์เปล่า)</button>
+            <button class="btn-modal cancel" onclick="closeExportModal()">ยกเลิก</button>
         </div>
     </div>
 
-    <div id="thumbnailModal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="thumbnail-header">
-                <h3>🎛️ เลือกหน้ากระดาษ</h3>
-                <button class="btn-close-modal" onclick="closeThumbnailModal()">✕</button>
+    <div id="thumbnailModal" class="modal" id="thumbModal">
+        <div class="modal-card">
+            <div class="thumb-head">
+                <h3>🎛️ เลือกหน้า</h3>
+                <button class="btn-close" onclick="closeThumbnailModal()">✕</button>
             </div>
-            <div class="thumbnail-grid-container">
-                <div class="thumbnail-grid" id="thumbnailGrid"></div>
-            </div>
+            <div class="thumb-grid" id="thumbnailGrid"></div>
         </div>
     </div>
 
@@ -223,23 +164,19 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyA1sFQMLA7pd8sRkeqIH5H7Ixo7oDKBqeY", authDomain: "ipadeditpdf.firebaseapp.com",
-            projectId: "ipadeditpdf", storageBucket: "ipadeditpdf.firebasestorage.app",
-            messagingSenderId: "690618814362", appId: "1:690618814362:web:42c3779fd7b2b7e0d0b423"
-        };
+        const firebaseConfig = { apiKey: "AIzaSyA1sFQMLA7pd8sRkeqIH5H7Ixo7oDKBqeY", authDomain: "ipadeditpdf.firebaseapp.com", projectId: "ipadeditpdf", storageBucket: "ipadeditpdf.firebasestorage.app", messagingSenderId: "690618814362", appId: "1:690618814362:web:42c3779fd7b2b7e0d0b423" };
         const app = initializeApp(firebaseConfig); const db = getFirestore(app);
         const docId = new URLSearchParams(window.location.search).get('id');
 
-        localforage.config({ name: 'iPadDrawingApp', storeName: 'workbooks_drafts' });
+        localforage.config({ name: 'iPadApp', storeName: 'drafts' });
 
         async function init() {
             if (docId) {
                 try {
-                    const docSnap = await getDoc(doc(db, "workbooks", docId));
-                    if (docSnap.exists()) window.initializeWorkspace(docSnap.data().url, docId);
+                    const snap = await getDoc(doc(db, "workbooks", docId));
+                    if (snap.exists()) window.initializeWorkspace(snap.data().url, docId);
                     else { alert("ไม่พบข้อมูล"); window.location.href = 'index.html'; }
-                } catch (e) { alert("เกิดข้อผิดพลาด"); }
+                } catch (e) { alert("ข้อผิดพลาด"); }
             } else window.location.href = 'index.html';
         }
         init();
@@ -247,330 +184,249 @@
 
     <script>
         let isSafeToLeave = false; 
-
-        window.addEventListener('beforeunload', e => { 
-            if (!isSafeToLeave) { 
-                e.preventDefault(); e.returnValue = 'คุณแน่ใจหรือไม่ที่จะออกจากหน้านี้?'; return e.returnValue;
-            } 
-        });
-
+        window.onbeforeunload = e => { if (!isSafeToLeave) { e.preventDefault(); return e.returnValue = 'แน่ใจหรือไม่?'; } };
         window.history.pushState({ locked: true }, '');
-        window.addEventListener('popstate', function(event) {
+        window.onpopstate = () => {
             if (!isSafeToLeave) {
-                if (confirm('🚨 คุณกำลังจะออกจากหน้านี้\n(ระบบบันทึกลายเส้นล่าสุดไว้ในเครื่องแล้ว)\n\nยืนยันที่จะออกใช่หรือไม่?')) {
-                    isSafeToLeave = true; window.history.back();
-                } else { window.history.pushState({ locked: true }, ''); }
+                if (confirm('🚨 ออกจากหน้านี้ใช่หรือไม่? (งานเซฟไว้แล้ว)')) { isSafeToLeave = true; window.history.back(); } 
+                else { window.history.pushState({ locked: true }, ''); }
             }
-        });
+        };
         
-        function goBack() { 
-            if(confirm('🚨 คุณกำลังจะกลับหน้าแรก\n(ระบบบันทึกลายเส้นล่าสุดไว้ในเครื่องแล้ว)\n\nยืนยันที่จะออกใช่หรือไม่?')) {
-                isSafeToLeave = true; window.location.href = 'index.html'; 
-            }
-        }
+        function goBack() { if(confirm('🚨 กลับหน้าแรกใช่หรือไม่?')) { isSafeToLeave = true; window.location.href = 'index.html'; } }
 
-        let isDarkMode = false, currentTool = 'pen', currentColor = '#1D1D1F', currentSize = 5, currentOpacity = 1.0;
-        let globalUndoStack = [], globalRedoStack = [], allPageUrls = [], currentPageIndex = 0, currentDocId = "";
-        let isMenuHidden = false;
+        let isDark = false, currentTool = 'pen', currentColor = '#1D1D1F', currentSize = 5, currentOpacity = 1.0;
+        let globalUndo = [], globalRedo = [], urls = [], curIdx = 0, curDocId = "";
+        let menuHidden = false;
 
         function toggleMenu() {
-            isMenuHidden = !isMenuHidden;
-            const menu = document.getElementById('mainToolbar');
-            const icon = document.getElementById('toggleIcon');
-            if (isMenuHidden) {
-                menu.classList.add('hidden'); icon.innerText = '🛠️';
-            } else {
-                menu.classList.remove('hidden'); icon.innerText = '🔽';
-            }
+            menuHidden = !menuHidden;
+            document.getElementById('mainToolbar').classList.toggle('hidden', menuHidden);
+            document.getElementById('toggleIcon').innerText = menuHidden ? '🛠️' : '🔽';
         }
 
         function toggleTheme() {
-            isDarkMode = !isDarkMode; document.body.classList.toggle('dark-theme', isDarkMode);
-            document.getElementById('btnTheme').innerHTML = isDarkMode ? '☀️' : '🌙'; 
+            isDark = !isDark; document.body.classList.toggle('dark-theme', isDark);
         }
 
-        function setTool(tool, btnElement) {
+        function setTool(tool, el) {
             currentTool = tool;
-            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
-            if(btnElement) btnElement.classList.add('active');
-            else document.getElementById(tool === 'highlighter' ? 'btnHighlighter' : 'btnPen').classList.add('active');
+            document.querySelectorAll('.btn-icon').forEach(b => b.classList.remove('active'));
+            if(el) el.classList.add('active'); else document.getElementById(tool==='highlighter'?'btnHighlighter':'btnPen').classList.add('active');
         }
 
-        window.setColor = function(color, element) {
+        window.setColor = function(color, el) {
             currentColor = color;
-            document.querySelectorAll('.color-dot, .color-picker-wrapper').forEach(b => b.classList.remove('active'));
-            if(element) element.classList.add('active');
+            document.querySelectorAll('.color-dot').forEach(b => b.classList.remove('active'));
+            if(el) el.classList.add('active');
             if(currentTool === 'eraser') setTool('pen', document.getElementById('btnPen'));
         }
 
         function undo() {
-            if (globalUndoStack.length === 0) return;
-            const lastState = globalUndoStack.pop();
-            const canvas = document.getElementById(`canvas-page-${lastState.index}`);
-            if (canvas) {
-                const ctx = canvas.getContext('2d');
-                globalRedoStack.push({ index: lastState.index, imageData: ctx.getImageData(0, 0, canvas.width, canvas.height) });
-                ctx.putImageData(lastState.imageData, 0, 0); saveCurrentCanvasAsync();
+            if (!globalUndo.length) return;
+            const last = globalUndo.pop(), cvs = document.getElementById(`cvs-${last.idx}`);
+            if (cvs) {
+                const ctx = cvs.getContext('2d');
+                globalRedo.push({ idx: last.idx, img: ctx.getImageData(0,0,cvs.width,cvs.height) });
+                ctx.putImageData(last.img, 0, 0); saveCvs();
             }
         }
 
         function redo() {
-            if (globalRedoStack.length === 0) return;
-            const nextState = globalRedoStack.pop();
-            const canvas = document.getElementById(`canvas-page-${nextState.index}`);
-            if (canvas) {
-                const ctx = canvas.getContext('2d');
-                globalUndoStack.push({ index: nextState.index, imageData: ctx.getImageData(0, 0, canvas.width, canvas.height) });
-                ctx.putImageData(nextState.imageData, 0, 0); saveCurrentCanvasAsync();
+            if (!globalRedo.length) return;
+            const next = globalRedo.pop(), cvs = document.getElementById(`cvs-${next.idx}`);
+            if (cvs) {
+                const ctx = cvs.getContext('2d');
+                globalUndo.push({ idx: next.idx, img: ctx.getImageData(0,0,cvs.width,cvs.height) });
+                ctx.putImageData(next.img, 0, 0); saveCvs();
             }
         }
 
-        window.initializeWorkspace = function(imageUrls, docId) {
-            allPageUrls = imageUrls.split('|').map(url => url.trim()); currentDocId = docId; currentPageIndex = 0;
-            const showPagination = allPageUrls.length > 1 ? 'flex' : 'none';
-            document.getElementById('paginationBar').style.display = showPagination;
-            document.getElementById('btnFloatingThumbnail').style.display = showPagination;
-            renderCurrentPage();
+        window.initializeWorkspace = function(urlStr, id) {
+            urls = urlStr.split('|').map(u => u.trim()); curDocId = id; curIdx = 0;
+            const show = urls.length > 1 ? 'flex' : 'none';
+            document.getElementById('paginationBar').style.display = show;
+            document.getElementById('btnThumb').style.display = show;
+            renderPage();
         };
 
-        async function renderCurrentPage() {
-            document.getElementById('workspace').innerHTML = '<p style="color:#8E8E93; font-weight:600; padding:60px;">⏳ กำลังโหลดกระดาน...</p>'; 
-            globalUndoStack = []; globalRedoStack = [];
-            await createCanvasPage(allPageUrls[currentPageIndex], currentPageIndex);
-            document.getElementById('pageIndicator').innerText = `${currentPageIndex + 1} / ${allPageUrls.length}`;
-            document.getElementById('btnPrevPage').disabled = currentPageIndex === 0;
-            document.getElementById('btnNextPage').disabled = currentPageIndex === allPageUrls.length - 1;
+        async function renderPage() {
+            document.getElementById('workspace').innerHTML = '<p style="color:#8E8E93; padding:60px;">⏳ กำลังโหลด...</p>'; 
+            globalUndo = []; globalRedo = [];
+            await createPage(urls[curIdx], curIdx);
+            document.getElementById('pageIndicator').innerText = `${curIdx + 1} / ${urls.length}`;
+            document.getElementById('btnPrevPage').disabled = curIdx === 0;
+            document.getElementById('btnNextPage').disabled = curIdx === urls.length - 1;
         }
 
-        window.prevPage = async function() { if(currentPageIndex > 0) { await saveCurrentCanvasAsync(); currentPageIndex--; renderCurrentPage(); } };
-        window.nextPage = async function() { if(currentPageIndex < allPageUrls.length - 1) { await saveCurrentCanvasAsync(); currentPageIndex++; renderCurrentPage(); } };
-
-        async function saveCurrentCanvasAsync() {
-            const canvas = document.getElementById(`canvas-page-${currentPageIndex}`);
-            if(canvas) await localforage.setItem(`draft_${currentDocId}_page_${currentPageIndex}`, canvas.toDataURL('image/png'));
+        window.prevPage = async () => { if(curIdx > 0) { await saveCvs(); curIdx--; renderPage(); } };
+        window.nextPage = async () => { if(curIdx < urls.length - 1) { await saveCvs(); curIdx++; renderPage(); } };
+        async function saveCvs() {
+            const cvs = document.getElementById(`cvs-${curIdx}`);
+            if(cvs) await localforage.setItem(`d_${curDocId}_${curIdx}`, cvs.toDataURL('image/png'));
         }
 
-        async function createCanvasPage(url, index) {
-            const wrapper = document.createElement('div'); wrapper.className = 'canvas-wrapper';
+        async function createPage(url, idx) {
+            const wrap = document.createElement('div'); wrap.className = 'canvas-wrapper';
             const img = new Image(); img.crossOrigin = "anonymous"; img.className = "bg-img"; img.src = url;
-            const canvas = document.createElement('canvas'); canvas.id = `canvas-page-${index}`;
-            const draftCanvas = document.createElement('canvas'); draftCanvas.id = `draft-canvas-${index}`; draftCanvas.className = "draft-canvas";
+            const cvs = document.createElement('canvas'); cvs.id = `cvs-${idx}`;
+            const dCvs = document.createElement('canvas'); dCvs.className = "draft-canvas";
             
-            return new Promise((resolve) => {
+            return new Promise(res => {
                 img.onload = async () => {
-                    canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
-                    draftCanvas.width = img.naturalWidth; draftCanvas.height = img.naturalHeight;
-                    const savedDraft = await localforage.getItem(`draft_${currentDocId}_page_${index}`);
+                    cvs.width = dCvs.width = img.naturalWidth; cvs.height = dCvs.height = img.naturalHeight;
+                    const saved = await localforage.getItem(`d_${curDocId}_${idx}`);
                     const ws = document.getElementById('workspace'); ws.innerHTML = '';
-                    wrapper.appendChild(img); wrapper.appendChild(canvas); wrapper.appendChild(draftCanvas); ws.appendChild(wrapper);
-
-                    const ctx = canvas.getContext('2d');
-                    if (savedDraft) {
-                        const draftImg = new Image();
-                        draftImg.onload = () => { ctx.drawImage(draftImg, 0, 0); globalUndoStack.push({ index, imageData: ctx.getImageData(0, 0, canvas.width, canvas.height) }); resolve(); };
-                        draftImg.src = savedDraft;
-                    } else { globalUndoStack.push({ index, imageData: ctx.getImageData(0, 0, canvas.width, canvas.height) }); resolve(); }
-                    setupDrawingSystem(canvas, draftCanvas, index);
+                    wrap.append(img, cvs, dCvs); ws.appendChild(wrap);
+                    const ctx = cvs.getContext('2d');
+                    if (saved) {
+                        const sImg = new Image();
+                        sImg.onload = () => { ctx.drawImage(sImg, 0, 0); globalUndo.push({ idx, img: ctx.getImageData(0,0,cvs.width,cvs.height) }); res(); };
+                        sImg.src = saved;
+                    } else { globalUndo.push({ idx, img: ctx.getImageData(0,0,cvs.width,cvs.height) }); res(); }
+                    setupDraw(cvs, dCvs, idx);
                 };
             });
         }
 
-        function setupDrawingSystem(canvas, draftCanvas, pageIndex) {
-            const ctx = canvas.getContext('2d', { willReadFrequently: true }); 
-            const draftCtx = draftCanvas.getContext('2d', { willReadFrequently: true }); 
-            let isDrawing = false, lastX = 0, lastY = 0;
-            
-            function getPos(clientX, clientY) {
-                const rect = canvas.getBoundingClientRect(); 
-                return { x: (clientX - rect.left) * (canvas.width / rect.width), y: (clientY - rect.top) * (canvas.height / rect.height) };
-            }
-            
-            canvas.addEventListener('pointerdown', (e) => {
-                if (e.pointerType === 'touch') return; 
-                
-                // 🛑 เกราะป้องกันระดับ 1: เช็คว่าปลายปากกาจิ้มลงบนเมนูหรือไม่
-                const target = document.elementFromPoint(e.clientX, e.clientY);
-                if (target && (target.closest('#mainToolbar') || target.closest('.floating-actions'))) {
-                    return; // ยกเลิกการวาด ปล่อยให้เมนูถูกกดแทน
-                }
+        function checkZone(x, y) {
+            const tb = document.getElementById('mainToolbar');
+            if (!menuHidden && tb) { const r = tb.getBoundingClientRect(); if (y >= r.top-20 && y <= r.bottom+20) return true; }
+            const fab = document.querySelector('.fab-container');
+            if (fab) { const r = fab.getBoundingClientRect(); if (x >= r.left-20 && x <= r.right+20 && y >= r.top-20 && y <= r.bottom+20) return true; }
+            return false;
+        }
 
-                e.preventDefault(); 
-                const pos = getPos(e.clientX, e.clientY);
-                globalUndoStack.push({ index: pageIndex, imageData: ctx.getImageData(0, 0, canvas.width, canvas.height) });
-                if (globalUndoStack.length > 50) globalUndoStack.shift(); globalRedoStack = [];
-                isDrawing = true; lastX = pos.x; lastY = pos.y; 
-                draftCanvas.style.opacity = (currentTool === 'highlighter') ? (currentOpacity * 0.4) : currentOpacity;
-            });
+        function setupDraw(cvs, dCvs, idx) {
+            const ctx = cvs.getContext('2d', { willReadFrequently: true }); 
+            const dCtx = dCvs.getContext('2d', { willReadFrequently: true }); 
+            let drawing = false, lX = 0, lY = 0;
+            const getP = (cx, cy) => { const r = cvs.getBoundingClientRect(); return { x: (cx-r.left)*(cvs.width/r.width), y: (cy-r.top)*(cvs.height/r.height) }; };
             
-            canvas.addEventListener('pointermove', (e) => {
-                if (!isDrawing || e.pointerType === 'touch') return; 
-
-                // 🛑 เกราะป้องกันระดับ 2: ถ้าลากเส้นแฉลบเข้าไปในกรอบเมนู ให้ตัดเส้นทิ้งทันที
-                const target = document.elementFromPoint(e.clientX, e.clientY);
-                if (target && (target.closest('#mainToolbar') || target.closest('.floating-actions'))) {
-                    stopAction(e); 
-                    return; 
-                }
-
-                e.preventDefault();
-                const pos = getPos(e.clientX, e.clientY); 
-                
+            cvs.onpointerdown = e => {
+                if (e.pointerType === 'touch' || checkZone(e.clientX, e.clientY)) return;
+                e.preventDefault(); const p = getP(e.clientX, e.clientY);
+                globalUndo.push({ idx, img: ctx.getImageData(0,0,cvs.width,cvs.height) });
+                if (globalUndo.length > 50) globalUndo.shift(); globalRedo = [];
+                drawing = true; lX = p.x; lY = p.y; 
+                dCvs.style.opacity = currentTool === 'highlighter' ? currentOpacity * 0.4 : currentOpacity;
+            };
+            
+            cvs.onpointermove = e => {
+                if (!drawing || e.pointerType === 'touch') return; 
+                if (checkZone(e.clientX, e.clientY)) { stop(e); return; }
+                e.preventDefault(); const p = getP(e.clientX, e.clientY);
                 if (currentTool === 'eraser') {
                     ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.globalCompositeOperation = 'destination-out';
                     ctx.globalAlpha = 1.0; ctx.lineWidth = currentSize * 6;
-                    ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(pos.x, pos.y); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(lX, lY); ctx.lineTo(p.x, p.y); ctx.stroke();
                 } else {
-                    draftCtx.lineCap = 'round'; draftCtx.lineJoin = 'round'; draftCtx.globalCompositeOperation = 'source-over'; draftCtx.globalAlpha = 1.0; 
-                    draftCtx.lineWidth = currentTool === 'highlighter' ? currentSize * 5 : currentSize * 1.5; 
-                    draftCtx.strokeStyle = currentColor;
-                    draftCtx.beginPath(); draftCtx.moveTo(lastX, lastY); draftCtx.lineTo(pos.x, pos.y); draftCtx.stroke();
+                    dCtx.lineCap = 'round'; dCtx.lineJoin = 'round'; dCtx.globalCompositeOperation = 'source-over'; dCtx.globalAlpha = 1.0; 
+                    dCtx.lineWidth = currentTool === 'highlighter' ? currentSize * 5 : currentSize * 1.5; 
+                    dCtx.strokeStyle = currentColor;
+                    dCtx.beginPath(); dCtx.moveTo(lX, lY); dCtx.lineTo(p.x, p.y); dCtx.stroke();
                 }
-                lastX = pos.x; lastY = pos.y;
-            });
+                lX = p.x; lY = p.y;
+            };
             
-            function stopAction(e) {
+            function stop(e) {
                 if (e && e.pointerType === 'touch') return;
-                if (isDrawing) {
+                if (drawing) {
                     if (currentTool !== 'eraser') {
                         ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = currentTool === 'highlighter' ? currentOpacity * 0.4 : currentOpacity;
-                        ctx.drawImage(draftCanvas, 0, 0); draftCtx.clearRect(0, 0, draftCanvas.width, draftCanvas.height);
+                        ctx.drawImage(dCvs, 0, 0); dCtx.clearRect(0,0,dCvs.width,dCvs.height);
                     }
-                    isDrawing = false; saveCurrentCanvasAsync();
+                    drawing = false; saveCvs();
                 }
             }
-            
-            canvas.addEventListener('pointerup', stopAction); canvas.addEventListener('pointerleave', stopAction); canvas.addEventListener('pointercancel', stopAction);
+            cvs.onpointerup = cvs.onpointerleave = cvs.onpointercancel = stop;
         }
 
         async function clearDraft() {
-            if(confirm('ต้องการลบลายมือหน้านี้ เพื่อเริ่มทำใหม่ใช่หรือไม่?')) {
-                const canvas = document.getElementById(`canvas-page-${currentPageIndex}`);
-                if(canvas) {
-                    const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, canvas.width, canvas.height); 
-                    await localforage.removeItem(`draft_${currentDocId}_page_${currentPageIndex}`); 
-                    globalUndoStack = [{ index: currentPageIndex, imageData: ctx.getImageData(0,0,canvas.width,canvas.height) }]; globalRedoStack = [];
+            if(confirm('ลบลายมือหน้านี้?')) {
+                const cvs = document.getElementById(`cvs-${curIdx}`);
+                if(cvs) {
+                    const ctx = cvs.getContext('2d'); ctx.clearRect(0, 0, cvs.width, cvs.height); 
+                    await localforage.removeItem(`d_${curDocId}_${curIdx}`); 
+                    globalUndo = [{ idx: curIdx, img: ctx.getImageData(0,0,cvs.width,cvs.height) }]; globalRedo = [];
                 }
             }
         }
 
-        window.openThumbnailModal = function() {
-            const grid = document.getElementById('thumbnailGrid'); grid.innerHTML = '';
-            allPageUrls.forEach((url, index) => {
-                const div = document.createElement('div'); div.className = `thumbnail-item ${index === currentPageIndex ? 'active' : ''}`;
-                div.onclick = async () => {
-                    closeThumbnailModal();
-                    if (index !== currentPageIndex) { await saveCurrentCanvasAsync(); currentPageIndex = index; renderCurrentPage(); }
-                };
-                div.innerHTML = `<img src="${url}" loading="lazy"><div class="thumbnail-page-num">หน้า ${index + 1}</div>`; grid.appendChild(div);
+        window.openThumbnailModal = () => {
+            const g = document.getElementById('thumbnailGrid'); g.innerHTML = '';
+            urls.forEach((u, i) => {
+                const d = document.createElement('div'); d.className = `thumb-item ${i === curIdx ? 'active' : ''}`;
+                d.onclick = async () => { closeThumbnailModal(); if (i !== curIdx) { await saveCvs(); curIdx = i; renderPage(); } };
+                d.innerHTML = `<img src="${u}" loading="lazy"><div class="thumb-num">หน้า ${i + 1}</div>`; g.appendChild(d);
             });
             document.getElementById('thumbnailModal').style.display = 'flex';
-        }
-        window.closeThumbnailModal = function() { document.getElementById('thumbnailModal').style.display = 'none'; }
-        window.promptJumpPage = function() {
-            const page = prompt(`ไปที่หน้า (1 - ${allPageUrls.length}):`, currentPageIndex + 1);
-            if (page) {
-                const target = parseInt(page) - 1;
-                if (target >= 0 && target < allPageUrls.length && target !== currentPageIndex) {
-                    saveCurrentCanvasAsync().then(() => { currentPageIndex = target; renderCurrentPage(); });
-                }
-            }
-        }
-        window.openExportModal = function() { document.getElementById('exportModal').style.display = 'flex'; }
-        window.closeExportModal = function() { document.getElementById('exportModal').style.display = 'none'; }
+        };
+        window.closeThumbnailModal = () => document.getElementById('thumbnailModal').style.display = 'none';
+        window.promptJumpPage = () => {
+            const p = prompt(`ไปที่หน้า (1-${urls.length}):`, curIdx + 1);
+            if (p) { const t = parseInt(p) - 1; if (t >= 0 && t < urls.length && t !== curIdx) { saveCvs().then(() => { curIdx = t; renderPage(); }); } }
+        };
         
-        function loadImage(src) { 
-            return new Promise((res, rej) => { 
-                const img = new Image(); 
-                if (!src.startsWith('data:')) { img.crossOrigin = "anonymous"; }
-                img.onload = () => res(img); 
-                img.onerror = (e) => rej(new Error('โหลดภาพล้มเหลว')); 
-                img.src = src; 
-            }); 
-        }
+        window.openExportModal = () => document.getElementById('exportModal').style.display = 'flex';
+        window.closeExportModal = () => document.getElementById('exportModal').style.display = 'none';
+        
+        const loadImg = src => new Promise((res, rej) => { const i = new Image(); if (!src.startsWith('data:')) i.crossOrigin = "anonymous"; i.onload = () => res(i); i.onerror = () => rej(new Error('โหลดภาพล้มเหลว')); i.src = src; });
 
-        window.executeDownload = async function(format) {
-            closeExportModal(); isSafeToLeave = true; 
-            const btnSave = document.querySelector('.btn-primary'); const originalText = btnSave.innerHTML;
-            await saveCurrentCanvasAsync(); 
+        window.executeDownload = async fmt => {
+            closeExportModal(); isSafeToLeave = true; const b = document.querySelector('.btn-primary'), ot = b.innerHTML;
+            await saveCvs(); 
             try {
-                if (format === 'pdf') {
+                if (fmt === 'pdf') {
                     const { jsPDF } = window.jspdf; let pdf;
-                    for (let i = 0; i < allPageUrls.length; i++) {
-                        btnSave.innerHTML = `⏳ สร้าง PDF (${i + 1}/${allPageUrls.length})...`;
-                        const bgImg = await loadImage(allPageUrls[i]);
-                        const exportCanvas = document.createElement('canvas'); exportCanvas.width = bgImg.naturalWidth; exportCanvas.height = bgImg.naturalHeight;
-                        const ctx = exportCanvas.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height); ctx.drawImage(bgImg, 0, 0);
-                        
-                        const activeCanvas = document.getElementById(`canvas-page-${i}`);
-                        if (activeCanvas) {
-                            ctx.drawImage(activeCanvas, 0, 0);
-                        } else {
-                            const savedDraft = await localforage.getItem(`draft_${currentDocId}_page_${i}`);
-                            if (savedDraft) ctx.drawImage(await loadImage(savedDraft), 0, 0);
-                        }
-
-                        const imgData = exportCanvas.toDataURL('image/jpeg', 0.85); const orientation = exportCanvas.width > exportCanvas.height ? 'l' : 'p';
-                        if (i === 0) pdf = new jsPDF({ orientation, unit: 'px', format: [exportCanvas.width, exportCanvas.height] });
-                        else pdf.addPage([exportCanvas.width, exportCanvas.height], orientation);
-                        pdf.addImage(imgData, 'JPEG', 0, 0, exportCanvas.width, exportCanvas.height);
+                    for (let i = 0; i < urls.length; i++) {
+                        b.innerHTML = `⏳ สร้าง PDF (${i+1}/${urls.length})...`;
+                        const bg = await loadImg(urls[i]), eCvs = document.createElement('canvas'); eCvs.width = bg.naturalWidth; eCvs.height = bg.naturalHeight;
+                        const ctx = eCvs.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0,0,eCvs.width,eCvs.height); ctx.drawImage(bg,0,0);
+                        const act = document.getElementById(`cvs-${i}`);
+                        if (act) ctx.drawImage(act,0,0); else { const s = await localforage.getItem(`d_${curDocId}_${i}`); if(s) ctx.drawImage(await loadImg(s),0,0); }
+                        const d = eCvs.toDataURL('image/jpeg', 0.85), ori = eCvs.width > eCvs.height ? 'l' : 'p';
+                        if (i === 0) pdf = new jsPDF({ orientation: ori, unit: 'px', format: [eCvs.width, eCvs.height] }); else pdf.addPage([eCvs.width, eCvs.height], ori);
+                        pdf.addImage(d, 'JPEG', 0, 0, eCvs.width, eCvs.height);
                     }
-                    btnSave.innerHTML = "⏳ ดาวน์โหลด..."; pdf.save('แบบฝึกหัด-ส่งงาน.pdf'); 
+                    b.innerHTML = "⏳ โหลด..."; pdf.save('แบบฝึกหัด.pdf'); 
                 } else {
-                    btnSave.innerHTML = "⏳ เซฟรูป...";
-                    const bgImg = await loadImage(allPageUrls[currentPageIndex]);
-                    const exportCanvas = document.createElement('canvas'); exportCanvas.width = bgImg.naturalWidth; exportCanvas.height = bgImg.naturalHeight;
-                    const ctx = exportCanvas.getContext('2d');
-                    if (format === 'jpg') { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height); }
-                    ctx.drawImage(bgImg, 0, 0);
-
-                    const activeCanvas = document.getElementById(`canvas-page-${currentPageIndex}`);
-                    if (activeCanvas) {
-                        ctx.drawImage(activeCanvas, 0, 0);
-                    } else {
-                        const savedDraft = await localforage.getItem(`draft_${currentDocId}_page_${currentPageIndex}`);
-                        if (savedDraft) ctx.drawImage(await loadImage(savedDraft), 0, 0);
-                    }
-
-                    const link = document.createElement('a'); link.download = `แบบฝึกหัด-หน้า${currentPageIndex + 1}.${format}`;
-                    link.href = exportCanvas.toDataURL(format === 'jpg' ? 'image/jpeg' : 'image/png', 1.0); link.click();
+                    b.innerHTML = "⏳ เซฟ...";
+                    const bg = await loadImg(urls[curIdx]), eCvs = document.createElement('canvas'); eCvs.width = bg.naturalWidth; eCvs.height = bg.naturalHeight;
+                    const ctx = eCvs.getContext('2d'); if (fmt === 'jpg') { ctx.fillStyle = '#fff'; ctx.fillRect(0,0,eCvs.width,eCvs.height); } ctx.drawImage(bg,0,0);
+                    const act = document.getElementById(`cvs-${curIdx}`);
+                    if (act) ctx.drawImage(act,0,0); else { const s = await localforage.getItem(`d_${curDocId}_${curIdx}`); if(s) ctx.drawImage(await loadImg(s),0,0); }
+                    const a = document.createElement('a'); a.download = `หน้า${curIdx+1}.${fmt}`; a.href = eCvs.toDataURL(fmt==='jpg'?'image/jpeg':'image/png', 1.0); a.click();
                 }
-            } catch (err) { alert('เกิดข้อผิดพลาด: ' + err.message); }
-            btnSave.innerHTML = originalText; isSafeToLeave = false;
-        }
+            } catch (e) { alert('ข้อผิดพลาด: ' + e.message); }
+            b.innerHTML = ot; isSafeToLeave = false;
+        };
 
-        window.downloadOriginal = async function() {
-            closeExportModal(); isSafeToLeave = true; 
-            const btnSave = document.querySelector('.btn-primary'); const originalText = btnSave.innerHTML;
+        window.downloadOriginal = async () => {
+            closeExportModal(); isSafeToLeave = true; const b = document.querySelector('.btn-primary'), ot = b.innerHTML;
             try {
-                if (allPageUrls.length > 1) {
+                if (urls.length > 1) {
                     const { jsPDF } = window.jspdf; let pdf;
-                    for (let i = 0; i < allPageUrls.length; i++) {
-                        btnSave.innerHTML = `⏳ ดึงต้นฉบับ (${i + 1}/${allPageUrls.length})...`;
-                        const bgImg = await loadImage(allPageUrls[i]);
-                        const exportCanvas = document.createElement('canvas'); exportCanvas.width = bgImg.naturalWidth; exportCanvas.height = bgImg.naturalHeight;
-                        const ctx = exportCanvas.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height); ctx.drawImage(bgImg, 0, 0);
-                        const imgData = exportCanvas.toDataURL('image/jpeg', 0.85); const orientation = exportCanvas.width > exportCanvas.height ? 'l' : 'p';
-                        if (i === 0) pdf = new jsPDF({ orientation, unit: 'px', format: [exportCanvas.width, exportCanvas.height] });
-                        else pdf.addPage([exportCanvas.width, exportCanvas.height], orientation);
-                        pdf.addImage(imgData, 'JPEG', 0, 0, exportCanvas.width, exportCanvas.height);
+                    for (let i = 0; i < urls.length; i++) {
+                        b.innerHTML = `⏳ ดึงฉบับ (${i+1}/${urls.length})...`;
+                        const bg = await loadImg(urls[i]), eCvs = document.createElement('canvas'); eCvs.width = bg.naturalWidth; eCvs.height = bg.naturalHeight;
+                        const ctx = eCvs.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0,0,eCvs.width,eCvs.height); ctx.drawImage(bg,0,0);
+                        const d = eCvs.toDataURL('image/jpeg', 0.85), ori = eCvs.width > eCvs.height ? 'l' : 'p';
+                        if (i === 0) pdf = new jsPDF({ orientation: ori, unit: 'px', format: [eCvs.width, eCvs.height] }); else pdf.addPage([eCvs.width, eCvs.height], ori);
+                        pdf.addImage(d, 'JPEG', 0, 0, eCvs.width, eCvs.height);
                     }
-                    btnSave.innerHTML = "⏳ ดาวน์โหลด..."; pdf.save('ไฟล์ต้นฉบับ.pdf'); 
+                    b.innerHTML = "⏳ โหลด..."; pdf.save('ต้นฉบับ.pdf'); 
                 } else {
-                    btnSave.innerHTML = "⏳ ดึงต้นฉบับ...";
-                    const bgImg = await loadImage(allPageUrls[0]);
-                    const exportCanvas = document.createElement('canvas'); exportCanvas.width = bgImg.naturalWidth; exportCanvas.height = bgImg.naturalHeight;
-                    const ctx = exportCanvas.getContext('2d'); ctx.drawImage(bgImg, 0, 0);
-                    const link = document.createElement('a'); link.download = `ไฟล์ต้นฉบับ.jpg`;
-                    link.href = exportCanvas.toDataURL('image/jpeg', 1.0); link.click();
+                    b.innerHTML = "⏳ โหลด...";
+                    const bg = await loadImg(urls[0]), eCvs = document.createElement('canvas'); eCvs.width = bg.naturalWidth; eCvs.height = bg.naturalHeight;
+                    eCvs.getContext('2d').drawImage(bg,0,0);
+                    const a = document.createElement('a'); a.download = `ต้นฉบับ.jpg`; a.href = eCvs.toDataURL('image/jpeg', 1.0); a.click();
                 }
-            } catch (err) { alert('เกิดข้อผิดพลาดในการดึงไฟล์ต้นฉบับ'); }
-            btnSave.innerHTML = originalText; isSafeToLeave = false;
-        }
+            } catch (e) { alert('ข้อผิดพลาด'); }
+            b.innerHTML = ot; isSafeToLeave = false;
+        };
 
-        document.addEventListener('touchmove', function(e) {
-            if (e.target.closest('#workspace') && e.touches.length === 1) { e.preventDefault(); }
-        }, { passive: false });
-
+        document.addEventListener('touchmove', e => { if (e.target.closest('#workspace') && e.touches.length === 1) e.preventDefault(); }, { passive: false });
     </script>
 </body>
 </html>
