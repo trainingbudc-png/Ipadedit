@@ -120,12 +120,13 @@
                 <button class="color-dot" style="background: #FF3B30;" onclick="setColor('#FF3B30', this)"></button>
                 <button class="color-dot" style="background: #007AFF;" onclick="setColor('#007AFF', this)"></button>
                 
-                <!-- 🛑 เพิ่ม oninput เพื่อให้สีเปลี่ยนตามตอนลาก และ onclick เพื่อดักการกด -->
+                <!-- 🛑 ดักสถานะเมื่อตารางสีถูกคลิก -->
                 <div class="color-dot color-picker-wrapper" id="customColorWrapper">
                     <input type="color" class="color-picker" id="colorPicker" value="#34C759" 
-                           onclick="if(window.stopDrawingAction) window.stopDrawingAction();" 
-                           oninput="setColor(this.value, document.getElementById('customColorWrapper'))" 
-                           onchange="setColor(this.value, document.getElementById('customColorWrapper'))">
+                           onclick="window.isColorPickerOpen = true;" 
+                           onchange="setColor(this.value, document.getElementById('customColorWrapper')); window.isColorPickerOpen = false;" 
+                           onblur="window.isColorPickerOpen = false;"
+                           oninput="setColor(this.value, document.getElementById('customColorWrapper'))">
                 </div>
             </div>
             <div class="tool-group">
@@ -228,7 +229,6 @@
             document.querySelectorAll('.color-dot').forEach(b => b.classList.remove('active'));
             if(el) el.classList.add('active');
             if(currentTool === 'eraser') setTool('pen', document.getElementById('btnPen'));
-            
             if (window.stopDrawingAction) window.stopDrawingAction();
         }
 
@@ -299,11 +299,20 @@
             });
         }
 
+        // 🛑 สนามพลังป้องกัน UI แบบเด็ดขาด
         function isProtectedZone(x, y) {
             const tb = document.getElementById('mainToolbar');
-            if (!menuHidden && tb) { const r = tb.getBoundingClientRect(); if (y >= r.top-20 && y <= r.bottom+20) return true; }
+            if (!menuHidden && tb) { 
+                const r = tb.getBoundingClientRect(); 
+                // บล็อกทั้งแถบความสูงด้านบนของหน้าจอแบบลากยาว (ตัดปัญหาทะลุเมนู)
+                if (y <= r.bottom + 30) return true; 
+            }
             const fab = document.querySelector('.fab-container');
-            if (fab) { const r = fab.getBoundingClientRect(); if (x >= r.left-20 && x <= r.right+20 && y >= r.top-20 && y <= r.bottom+20) return true; }
+            if (fab) { 
+                const r = fab.getBoundingClientRect(); 
+                // บล็อกมุมขวาล่าง
+                if (x >= r.left - 30 && y >= r.top - 30) return true; 
+            }
             return false;
         }
 
@@ -316,9 +325,18 @@
             cvs.onpointerdown = e => {
                 if (e.pointerType === 'touch') return;
                 
-                // 🛑 เช็คสถานะการจิ้มจริงๆ (e.buttons === 0 คือแค่ Hover หรือ OS บั๊กส่งค่ามา)
+                // 🛑 1. ป้องกันการวาดทะลุตารางสีขณะเปิดอยู่
+                if (window.isColorPickerOpen || (document.activeElement && document.activeElement.id === 'colorPicker')) {
+                    document.activeElement.blur();
+                    window.isColorPickerOpen = false;
+                    return; 
+                }
+
+                // 🛑 2. ป้องกันการจิ้มเริ่มวาดบนเขตหวงห้าม (เครื่องมือด้านบน)
+                if (isProtectedZone(e.clientX, e.clientY)) return;
+
+                // 🛑 3. ป้องกันการวาดแบบลอยๆ (Hover Ghosting)
                 if (e.buttons === 0) return;
-                if (e.target.tagName !== 'CANVAS' || isProtectedZone(e.clientX, e.clientY)) return;
 
                 e.preventDefault(); const p = getP(e.clientX, e.clientY);
                 globalUndo.push({ idx, img: ctx.getImageData(0,0,cvs.width,cvs.height) });
@@ -330,9 +348,9 @@
             cvs.onpointermove = e => {
                 if (!drawing || e.pointerType === 'touch') return; 
                 
-                // 🛑 ดักจับการลอยปากกา (Hover Ghosting)
-                if (e.buttons === 0) { stop(e); return; }
+                // 🛑 4. ถ้าลากเส้นแฉลบเข้าไปในเขตเครื่องมือ ตัดเส้นทิ้งทันที!
                 if (isProtectedZone(e.clientX, e.clientY)) { stop(e); return; }
+                if (e.buttons === 0) { stop(e); return; }
 
                 e.preventDefault(); const p = getP(e.clientX, e.clientY);
                 if (currentTool === 'eraser') {
@@ -359,7 +377,6 @@
                 }
             }
 
-            // ผูกฟังก์ชัน stop เข้า window ให้ส่วน UI เรียกใช้ได้
             window.stopDrawingAction = stop;
 
             cvs.onpointerup = cvs.onpointerleave = cvs.onpointercancel = stop;
@@ -450,7 +467,6 @@
             b.innerHTML = ot; isSafeToLeave = false;
         };
 
-        // ล็อกหน้าจอเฉพาะตอนกระดาษ (กันเมนูเลื่อนไม่ได้)
         document.addEventListener('touchmove', e => { 
             if (e.target.tagName === 'CANVAS' && e.touches.length === 1) e.preventDefault(); 
         }, { passive: false });
