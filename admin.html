@@ -86,7 +86,10 @@
         import { getFirestore, collection, addDoc, serverTimestamp, getDocs, query, orderBy, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 
-        const CLOUDINARY_CLOUD_NAME = "uhfvkgnh", CLOUDINARY_UPLOAD_PRESET = "ipadedit";
+        // ตั้งค่าตัวแปร Cloudinary ให้ตรงกัน
+        const CLOUDINARY_CLOUD_NAME = "uhfvkgnh"; 
+        const CLOUDINARY_UPLOAD_PRESET = "ipadedit";
+        
         const firebaseConfig = { apiKey: "AIzaSyA1sFQMLA7pd8sRkeqIH5H7Ixo7oDKBqeY", authDomain: "ipadeditpdf.firebaseapp.com", projectId: "ipadeditpdf", storageBucket: "ipadeditpdf.firebasestorage.app", messagingSenderId: "690618814362", appId: "1:690618814362:web:42c3779fd7b2b7e0d0b423" };
         const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app);
 
@@ -111,11 +114,19 @@
             } catch (e) { adminGallery.innerHTML = "<p style='color:red; text-align:center;'>❌ โหลดข้อมูลล้มเหลว</p>"; }
         }
 
-        // 🛑 ฟังก์ชันดึง public_id จาก URL ของ Cloudinary
+        // 🛑 ฟังก์ชันตัด URL ให้ได้ค่า public_id ที่เป๊ะที่สุด (รองรับแบบมี Folder และ Version)
         function extractPublicId(url) {
-            const parts = url.split('/');
-            const filenameWithExt = parts[parts.length - 1];
-            return filenameWithExt.split('.')[0];
+            try {
+                const uploadIdx = url.indexOf('/upload/');
+                if (uploadIdx === -1) return '';
+                let path = url.substring(uploadIdx + 8); // ตัดเอาตั้งแต่หลังคำว่า /upload/
+                path = path.replace(/^v\d+\//, ''); // ลบ version ออก เช่น v1726400000/
+                const lastDot = path.lastIndexOf('.');
+                if (lastDot !== -1) path = path.substring(0, lastDot); // ลบนามสกุล .jpg ออก
+                return decodeURIComponent(path); // แปลงอักขระพิเศษกลับเผื่อมี
+            } catch (e) {
+                return '';
+            }
         }
 
         function renderList(items) {
@@ -125,26 +136,29 @@
                 div.innerHTML = `<div class="list-info"><img src="${data.url.split('|')[0]}"><span class="list-name" title="${data.name}">${data.name}</span></div>`;
                 const delBtn = document.createElement('button'); delBtn.className = 'btn-delete'; delBtn.textContent = "ลบ";
                 
-                // 🛑 ระบบลบสองเด้ง (Cloudinary + Firebase)
+                // 🛑 ระบบลบสองต่อ (ลบรูปจาก Cloudinary -> ลบข้อมูลจาก Firebase)
                 delBtn.onclick = async () => {
-                    if(confirm(`ลบ: "${data.name}" และลบไฟล์รูปภาพออกจากเซิร์ฟเวอร์ด้วยใช่หรือไม่?`)) {
+                    if(confirm(`ลบ: "${data.name}" และลบรูปภาพจากเซิร์ฟเวอร์ด้วยใช่หรือไม่?`)) {
                         delBtn.textContent = "กำลังลบ..."; delBtn.disabled = true;
                         try {
                             const imageUrls = data.url.split('|');
                             
-                            // 1. ส่งคำสั่งให้ Vercel API ลบไฟล์รูปทีละหน้าจาก Cloudinary
+                            // 1. สั่งลบรูปภาพจาก Cloudinary
                             for (const url of imageUrls) {
                                 const publicId = extractPublicId(url.trim());
                                 if (publicId) {
-                                    await fetch('/api/delete', {
+                                    console.log("ส่งคำสั่งลบ public_id:", publicId);
+                                    const res = await fetch('/api/delete', {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ public_id: publicId })
                                     });
+                                    const resultData = await res.json();
+                                    console.log("สถานะจาก Cloudinary:", resultData);
                                 }
                             }
 
-                            // 2. ลบออกจากฐานข้อมูล Firebase
+                            // 2. ลบข้อมูลจาก Firebase
                             await deleteDoc(doc(db, "workbooks", data.id)); 
                             
                             loadAdminGallery(); 
