@@ -19,7 +19,6 @@
         .btn-back:active { transform: scale(0.92); }
         .page-title { font-size: 28px; font-weight: 700; margin: 0; }
 
-        /* 🗂️ Content Box */
         .card-panel { background: var(--surface); border-radius: 24px; padding: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid var(--border); margin-bottom: 24px; }
         .card-header { margin-bottom: 24px; }
         .card-header h2 { margin: 0 0 8px 0; font-size: 20px; font-weight: 700; }
@@ -112,16 +111,48 @@
             } catch (e) { adminGallery.innerHTML = "<p style='color:red; text-align:center;'>❌ โหลดข้อมูลล้มเหลว</p>"; }
         }
 
+        // 🛑 ฟังก์ชันดึง public_id จาก URL ของ Cloudinary
+        function extractPublicId(url) {
+            const parts = url.split('/');
+            const filenameWithExt = parts[parts.length - 1];
+            return filenameWithExt.split('.')[0];
+        }
+
         function renderList(items) {
             adminGallery.innerHTML = items.length ? '' : "<p style='text-align:center; color:var(--text-muted);'>ไม่มีข้อมูล</p>";
             items.forEach(data => {
                 const div = document.createElement('div'); div.className = 'list-item';
                 div.innerHTML = `<div class="list-info"><img src="${data.url.split('|')[0]}"><span class="list-name" title="${data.name}">${data.name}</span></div>`;
                 const delBtn = document.createElement('button'); delBtn.className = 'btn-delete'; delBtn.textContent = "ลบ";
+                
+                // 🛑 ระบบลบสองเด้ง (Cloudinary + Firebase)
                 delBtn.onclick = async () => {
-                    if(confirm(`ลบ: "${data.name}"?`)) {
-                        delBtn.textContent = "ลบ..."; delBtn.disabled = true;
-                        try { await deleteDoc(doc(db, "workbooks", data.id)); loadAdminGallery(); } catch(e) { alert("❌ " + e.message); delBtn.disabled = false; }
+                    if(confirm(`ลบ: "${data.name}" และลบไฟล์รูปภาพออกจากเซิร์ฟเวอร์ด้วยใช่หรือไม่?`)) {
+                        delBtn.textContent = "กำลังลบ..."; delBtn.disabled = true;
+                        try {
+                            const imageUrls = data.url.split('|');
+                            
+                            // 1. ส่งคำสั่งให้ Vercel API ลบไฟล์รูปทีละหน้าจาก Cloudinary
+                            for (const url of imageUrls) {
+                                const publicId = extractPublicId(url.trim());
+                                if (publicId) {
+                                    await fetch('/api/delete', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ public_id: publicId })
+                                    });
+                                }
+                            }
+
+                            // 2. ลบออกจากฐานข้อมูล Firebase
+                            await deleteDoc(doc(db, "workbooks", data.id)); 
+                            
+                            loadAdminGallery(); 
+                        } catch(e) { 
+                            alert("❌ " + e.message); 
+                            delBtn.disabled = false; 
+                            delBtn.textContent = "ลบ";
+                        }
                     }
                 };
                 div.appendChild(delBtn); adminGallery.appendChild(div);
