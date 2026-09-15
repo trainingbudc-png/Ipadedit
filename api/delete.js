@@ -1,31 +1,31 @@
 const crypto = require('crypto');
 
 module.exports = async function handler(req, res) {
-    // รับเฉพาะคำสั่ง POST เท่านั้น
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
     
     const { public_id } = req.body;
-    if (!public_id) {
-        return res.status(400).json({ error: 'Missing public_id' });
-    }
+    
+    // 🔍 พิมพ์เช็กว่าได้รับชื่อไฟล์มาถูกต้องไหม
+    console.log("👉 1. กำลังพยายามลบไฟล์ (public_id):", public_id || "ไม่ได้รับค่า");
 
-    // ดึงรหัสผ่านจาก Vercel Environment Variables
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
     const apiKey = process.env.CLOUDINARY_API_KEY;
     const apiSecret = process.env.CLOUDINARY_API_SECRET;
 
-    // ถ้าหาตัวแปรไม่เจอ ให้แจ้ง Error บอกสาเหตุ
+    // 🔍 พิมพ์เช็กว่า Vercel มองเห็นรหัสผ่านไหม (ถ้าเห็นจะขึ้น OK ถ้าไม่เห็นจะขึ้น MISSING)
+    console.log("👉 2. เช็ก Environment Variables:");
+    console.log("- Cloud Name:", cloudName ? "✅ OK" : "❌ MISSING");
+    console.log("- API Key:", apiKey ? "✅ OK" : "❌ MISSING");
+    console.log("- API Secret:", apiSecret ? "✅ OK" : "❌ MISSING");
+
     if (!cloudName || !apiKey || !apiSecret) {
-        return res.status(500).json({ 
-            error: 'Server Error: ไม่พบรหัสผ่าน Cloudinary. กรุณาเช็ก Environment Variables ใน Vercel และกด Redeploy' 
-        });
+        console.error("🚨 สรุป: Vercel หา Environment Variables ไม่เจอครับ!");
+        return res.status(500).json({ error: 'Missing Cloudinary Environment Variables' });
     }
 
     const timestamp = Math.round(new Date().getTime() / 1000);
-    
-    // สร้าง Signature ดิจิทัล
     const stringToSign = `public_id=${public_id}&timestamp=${timestamp}${apiSecret}`;
     const signature = crypto.createHash('sha1').update(stringToSign).digest('hex');
 
@@ -36,17 +36,17 @@ module.exports = async function handler(req, res) {
     formData.append('signature', signature);
 
     try {
+        console.log("👉 3. กำลังส่งคำสั่งไปที่ Cloudinary...");
         const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`, {
             method: 'POST',
             body: formData
         });
         const result = await response.json();
         
-        return res.status(200).json({ 
-            sent_public_id: public_id, 
-            cloudinary_response: result 
-        });
+        console.log("👉 4. ผลลัพธ์จาก Cloudinary:", result);
+        return res.status(200).json({ sent_public_id: public_id, cloudinary_response: result });
     } catch (error) {
+        console.error("🚨 Error ตอนยิง Fetch:", error.message);
         return res.status(500).json({ error: error.message });
     }
 }
