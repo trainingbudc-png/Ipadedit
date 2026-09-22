@@ -11,7 +11,7 @@
         input { -webkit-user-select: auto; user-select: auto; }
         
         :root { --primary: #007AFF; --danger: #FF3B30; --bg: #EAEBEE; --surface: #FFFFFF; --text: #1C1C1E; --border: #E5E5EA; --pill: #F2F2F7; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; background-color: var(--bg); text-align: center; margin: 0; padding: env(safe-area-inset-top) 16px 20px; transition: background-color 0.3s; overscroll-behavior-y: none; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; background-color: var(--bg); text-align: center; margin: 0; padding: env(safe-area-inset-top) 16px 20px; transition: background-color 0.3s; overscroll-behavior-y: none; overflow-x: hidden; }
         
         /* 🛠️ Floating Toolbar */
         .toolbar-main { position: sticky; top: 16px; z-index: 1000; width: 100%; max-width: 900px; margin: 0 auto 24px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: 10px 16px; border-radius: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.06); display: flex; flex-direction: column; gap: 10px; border: 1px solid rgba(0,0,0,0.04); transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); touch-action: none; }
@@ -41,7 +41,11 @@
         #pageIndicator:active { opacity: 0.6; }
 
         /* Workspace */
-        #workspace { width: 100%; max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;}
+        #workspace { 
+            width: 100%; max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; 
+            transform-origin: center center; /* จุดศูนย์กลางสำหรับการซูม */
+            transition: transform 0.05s linear; /* ทำให้สมูทตอนซูมแต่ไม่หน่วง */
+        }
         .canvas-wrapper { position: relative; background: var(--surface); box-shadow: 0 8px 32px rgba(0,0,0,0.05); border-radius: 12px; overflow: hidden; }
         .bg-img { width: 100%; display: block; user-select: none; pointer-events: none; }
         canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; } 
@@ -291,8 +295,10 @@
             window.lockDrawing(500);
         }
 
-        window.prevPage = async () => { if(curIdx > 0) { await saveCvs(); curIdx--; renderPage(); } };
-        window.nextPage = async () => { if(curIdx < urls.length - 1) { await saveCvs(); curIdx++; renderPage(); } };
+        // 🛑 เพิ่ม window.resetZoom() เวลากดเปลี่ยนหน้า
+        window.prevPage = async () => { if(curIdx > 0) { await saveCvs(); curIdx--; window.resetZoom(); renderPage(); } };
+        window.nextPage = async () => { if(curIdx < urls.length - 1) { await saveCvs(); curIdx++; window.resetZoom(); renderPage(); } };
+        
         async function saveCvs() {
             const cvs = document.getElementById(`cvs-${curIdx}`);
             if(cvs) await localforage.setItem(`d_${curDocId}_${curIdx}`, cvs.toDataURL('image/png'));
@@ -414,15 +420,18 @@
             const g = document.getElementById('thumbnailGrid'); g.innerHTML = '';
             urls.forEach((u, i) => {
                 const d = document.createElement('div'); d.className = `thumb-item ${i === curIdx ? 'active' : ''}`;
-                d.onclick = async () => { closeThumbnailModal(); if (i !== curIdx) { await saveCvs(); curIdx = i; renderPage(); } };
+                // 🛑 เพิ่ม window.resetZoom() เวลากดเลือกหน้าจาก Thumbnail
+                d.onclick = async () => { closeThumbnailModal(); if (i !== curIdx) { await saveCvs(); curIdx = i; window.resetZoom(); renderPage(); } };
                 d.innerHTML = `<img src="${u}" loading="lazy"><div class="thumb-num">หน้า ${i + 1}</div>`; g.appendChild(d);
             });
             document.getElementById('thumbnailModal').style.display = 'flex';
         };
         window.closeThumbnailModal = () => document.getElementById('thumbnailModal').style.display = 'none';
+        
         window.promptJumpPage = () => {
             const p = prompt(`ไปที่หน้า (1-${urls.length}):`, curIdx + 1);
-            if (p) { const t = parseInt(p) - 1; if (t >= 0 && t < urls.length && t !== curIdx) { saveCvs().then(() => { curIdx = t; renderPage(); }); } }
+            // 🛑 เพิ่ม window.resetZoom() เวลากระโดดข้ามหน้า
+            if (p) { const t = parseInt(p) - 1; if (t >= 0 && t < urls.length && t !== curIdx) { saveCvs().then(() => { curIdx = t; window.resetZoom(); renderPage(); }); } }
         };
         
         window.openExportModal = () => { window.lockDrawing(500); document.getElementById('exportModal').style.display = 'flex'; }
@@ -482,6 +491,66 @@
             } catch (e) { alert('ข้อผิดพลาด'); }
             b.innerHTML = ot; isSafeToLeave = false;
         };
+
+        // ==========================================
+        // 🔍 ระบบซูมและเลื่อนกระดาษด้วย 2 นิ้ว (Pinch & Pan)
+        // ==========================================
+        const wsElement = document.getElementById('workspace');
+        window.wsScale = 1; 
+        window.wsPanX = 0; 
+        window.wsPanY = 0;
+        let isZooming = false, startDist = 0, startScale = 1;
+        let startPanX = 0, startPanY = 0, pinchCenter = {x:0, y:0};
+
+        window.resetZoom = () => {
+            window.wsScale = 1; window.wsPanX = 0; window.wsPanY = 0;
+            wsElement.style.transform = `translate(0px, 0px) scale(1)`;
+        };
+
+        wsElement.addEventListener('touchstart', e => {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                isZooming = true;
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                startDist = Math.hypot(dx, dy);
+                startScale = window.wsScale;
+                
+                pinchCenter = {
+                    x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+                    y: (e.touches[0].clientY + e.touches[1].clientY) / 2
+                };
+                startPanX = window.wsPanX; 
+                startPanY = window.wsPanY;
+            }
+        }, { passive: false });
+
+        wsElement.addEventListener('touchmove', e => {
+            if (isZooming && e.touches.length === 2) {
+                e.preventDefault();
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                const dist = Math.hypot(dx, dy);
+                
+                // จำกัดการซูม (0.5x ย่อสุด - 5x ขยายสุด)
+                window.wsScale = Math.max(0.5, Math.min(startScale * (dist / startDist), 5));
+                
+                const currentCenter = {
+                    x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+                    y: (e.touches[0].clientY + e.touches[1].clientY) / 2
+                };
+                
+                // คำนวณการเลื่อนกระดาษตามจุดศูนย์กลางของนิ้วที่เปลี่ยนไป
+                window.wsPanX = startPanX + (currentCenter.x - pinchCenter.x);
+                window.wsPanY = startPanY + (currentCenter.y - pinchCenter.y);
+                
+                wsElement.style.transform = `translate(${window.wsPanX}px, ${window.wsPanY}px) scale(${window.wsScale})`;
+            }
+        }, { passive: false });
+
+        wsElement.addEventListener('touchend', e => {
+            if (e.touches.length < 2) isZooming = false;
+        });
 
         // ล็อกหน้าจอเฉพาะตอนกระดาษ (กันเมนูเลื่อนไม่ได้)
         document.addEventListener('touchmove', e => { 
