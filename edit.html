@@ -37,9 +37,6 @@
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: 0.2s; }
         input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.2); }
 
-        #pageIndicator { font-size: 14px; font-weight: 600; min-width: 44px; text-align: center; cursor: pointer; padding: 0 8px; }
-        #pageIndicator:active { opacity: 0.6; }
-
         /* Workspace */
         #workspace { 
             width: 100%; max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; 
@@ -51,11 +48,34 @@
         canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; } 
         .draft-canvas { pointer-events: none; } 
 
-        /* Floating Actions */
+        /* Floating Actions (Right) */
         .fab-container { position: fixed; bottom: 24px; right: 24px; z-index: 1000; display: flex; flex-direction: column; gap: 12px; touch-action: none; }
         .fab { width: 50px; height: 50px; border-radius: 25px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid var(--border); box-shadow: 0 8px 24px rgba(0,0,0,0.1); font-size: 20px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s; }
         .fab:active:not(:disabled) { transform: scale(0.85); }
-        .fab:disabled { opacity: 0.4; cursor: not-allowed; }
+        
+        /* 🟢 Bottom Pagination (Center) */
+        .bottom-pagination {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            padding: 6px 12px;
+            gap: 12px;
+            transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            touch-action: none;
+        }
+        .bottom-pagination.hidden { opacity: 0; pointer-events: none; transform: translate(-50%, 20px); }
+        .page-indicator { font-size: 15px; font-weight: 600; min-width: 50px; text-align: center; cursor: pointer; color: var(--text); }
+        .page-indicator:active { opacity: 0.6; }
 
         /* Modals */
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 10000; justify-content: center; align-items: center; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
@@ -82,8 +102,8 @@
 
         /* Dark Mode */
         body.dark-theme { background-color: #000000; --surface: #1C1C1E; --text: #FFFFFF; --border: #38383A; --pill: #2C2C2E; }
-        body.dark-theme .toolbar-main, body.dark-theme .fab { background: rgba(28, 28, 30, 0.95); border-color: rgba(255,255,255,0.1); color: #fff; }
-        body.dark-theme .btn, body.dark-theme .btn-close { color: #fff; }
+        body.dark-theme .toolbar-main, body.dark-theme .fab, body.dark-theme .bottom-pagination { background: rgba(28, 28, 30, 0.95); border-color: rgba(255,255,255,0.1); color: #fff; }
+        body.dark-theme .btn, body.dark-theme .btn-close, body.dark-theme .page-indicator { color: #fff; }
         body.dark-theme .btn:active:not(:disabled) { background: rgba(255,255,255,0.1); }
         body.dark-theme .btn-icon.active { background: #3A3A3C; color: #0A84FF; }
         body.dark-theme input[type="range"] { background: rgba(255,255,255,0.2); }
@@ -96,11 +116,7 @@
             <div class="tool-group" style="background: transparent;">
                 <button class="btn" onclick="goBack()" style="color: var(--primary);">‹ กลับ</button>
             </div>
-            <div class="tool-group" id="paginationBar" style="display: none;">
-                <button class="btn btn-icon" id="btnPrevPage" onclick="prevPage()">◀</button>
-                <span id="pageIndicator" onclick="promptJumpPage()">1 / 1</span>
-                <button class="btn btn-icon" id="btnNextPage" onclick="nextPage()">▶</button>
-            </div>
+            <!-- ย้ายปุ่มเปลี่ยนหน้าไปไว้ด้านล่างแล้ว -->
             <div class="tool-group" style="background: transparent; gap: 8px;">
                 <button class="btn" onclick="clearDraft()" style="color: var(--danger); background: var(--pill);">ล้าง</button>
                 <button class="btn btn-primary" onclick="openExportModal()">ส่งออก</button>
@@ -140,10 +156,15 @@
         </div>
     </div>
 
-    <!-- 🟢 กลุ่มปุ่มลอยตัวด้านขวาล่าง -->
+    <!-- 🟢 กล่องเปลี่ยนหน้าลอยตัว (ตรงกลางด้านล่าง) -->
+    <div class="bottom-pagination" id="bottomPagination" style="display: none;" onpointerdown="window.lockDrawing(500); event.stopPropagation()" onpointermove="event.stopPropagation()">
+        <button class="btn btn-icon" id="btnPrevPage" onclick="prevPage()">◀</button>
+        <span class="page-indicator" id="pageIndicator" onclick="promptJumpPage()">1 / 1</span>
+        <button class="btn btn-icon" id="btnNextPage" onclick="nextPage()">▶</button>
+    </div>
+
+    <!-- ปุ่มลอยมุมขวาล่าง -->
     <div class="fab-container" onpointerdown="window.lockDrawing(500); event.stopPropagation()" onpointermove="event.stopPropagation()">
-        <button class="fab" id="fabPrev" onclick="prevPage()" style="display: none;">◀</button>
-        <button class="fab" id="fabNext" onclick="nextPage()" style="display: none;">▶</button>
         <button class="fab" id="btnThumb" onclick="openThumbnailModal()" style="display: none;">🎛️</button>
         <button class="fab" onclick="toggleMenu()"><span id="toggleIcon">🔽</span></button>
     </div>
@@ -224,6 +245,11 @@
         function toggleMenu() {
             menuHidden = !menuHidden;
             document.getElementById('mainToolbar').classList.toggle('hidden', menuHidden);
+            
+            // 🟢 ซ่อนกล่องเปลี่ยนหน้าด้วยเวลาปิดเมนู
+            const bp = document.getElementById('bottomPagination');
+            if (bp && urls.length > 1) bp.classList.toggle('hidden', menuHidden);
+            
             document.getElementById('toggleIcon').innerText = menuHidden ? '🛠️' : '🔽';
             window.lockDrawing(500);
         }
@@ -278,12 +304,10 @@
         window.initializeWorkspace = function(urlStr, id) {
             urls = urlStr.split('|').map(u => u.trim()); curDocId = id; curIdx = 0;
             const show = urls.length > 1 ? 'flex' : 'none';
-            document.getElementById('paginationBar').style.display = show;
-            document.getElementById('btnThumb').style.display = show;
             
-            // 🟢 แสดงปุ่มเปลี่ยนหน้าด้านล่างเฉพาะเมื่อมีหลายหน้า
-            document.getElementById('fabPrev').style.display = show;
-            document.getElementById('fabNext').style.display = show;
+            // 🟢 โชว์เมนูเปลี่ยนหน้าด้านล่าง
+            document.getElementById('bottomPagination').style.display = show;
+            document.getElementById('btnThumb').style.display = show;
             
             renderPage();
         };
@@ -292,6 +316,8 @@
             document.getElementById('workspace').innerHTML = '<p style="color:#8E8E93; padding:60px;">⏳ กำลังโหลด...</p>'; 
             globalUndo = []; globalRedo = [];
             await createPage(urls[curIdx], curIdx);
+            
+            // 🟢 อัปเดตตัวเลขหน้าด้านล่าง
             document.getElementById('pageIndicator').innerText = `${curIdx + 1} / ${urls.length}`;
             
             const isFirst = curIdx === 0;
@@ -299,10 +325,6 @@
             
             document.getElementById('btnPrevPage').disabled = isFirst;
             document.getElementById('btnNextPage').disabled = isLast;
-            
-            // 🟢 อัปเดตสถานะปุ่มเปลี่ยนหน้าด้านล่างให้กดไม่ได้ถ้าสุดทาง
-            document.getElementById('fabPrev').disabled = isFirst;
-            document.getElementById('fabNext').disabled = isLast;
             
             window.lockDrawing(500);
         }
@@ -338,6 +360,7 @@
             });
         }
 
+        // 🟢 เพิ่มระบบป้องกันการวาดทะลุไปโดนเมนูด้านล่าง
         function isProtectedZone(x, y) {
             const tb = document.getElementById('mainToolbar');
             if (!menuHidden && tb) { 
@@ -348,6 +371,11 @@
             if (fab) { 
                 const r = fab.getBoundingClientRect(); 
                 if (x >= r.left - 30 && y >= r.top - 30) return true; 
+            }
+            const bp = document.getElementById('bottomPagination');
+            if (!menuHidden && bp && bp.style.display !== 'none') {
+                const r = bp.getBoundingClientRect();
+                if (x >= r.left - 30 && x <= r.right + 30 && y >= r.top - 30) return true;
             }
             return false;
         }
