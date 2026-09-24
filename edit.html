@@ -73,7 +73,7 @@
             transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             touch-action: none;
         }
-        .bottom-pagination.hidden { opacity: 0; pointer-events: none; transform: translate(-50%, 20px); }
+        /* เอา class .bottom-pagination.hidden ออก เพื่อไม่ให้มีโอกาสซ่อนด้วย CSS */
         .page-indicator { font-size: 15px; font-weight: 600; min-width: 50px; text-align: center; cursor: pointer; color: var(--text); }
         .page-indicator:active { opacity: 0.6; }
 
@@ -116,7 +116,6 @@
             <div class="tool-group" style="background: transparent;">
                 <button class="btn" onclick="goBack()" style="color: var(--primary);">‹ กลับ</button>
             </div>
-            <!-- ย้ายปุ่มเปลี่ยนหน้าไปไว้ด้านล่างแล้ว -->
             <div class="tool-group" style="background: transparent; gap: 8px;">
                 <button class="btn" onclick="clearDraft()" style="color: var(--danger); background: var(--pill);">ล้าง</button>
                 <button class="btn btn-primary" onclick="openExportModal()">ส่งออก</button>
@@ -246,9 +245,7 @@
             menuHidden = !menuHidden;
             document.getElementById('mainToolbar').classList.toggle('hidden', menuHidden);
             
-            // 🟢 ซ่อนกล่องเปลี่ยนหน้าด้วยเวลาปิดเมนู
-            const bp = document.getElementById('bottomPagination');
-            if (bp && urls.length > 1) bp.classList.toggle('hidden', menuHidden);
+            // 🟢 เอาคำสั่งซ่อน bottomPagination ออก ปุ่มด้านล่างจะได้ลอยอยู่ตลอดเวลา
             
             document.getElementById('toggleIcon').innerText = menuHidden ? '🛠️' : '🔽';
             window.lockDrawing(500);
@@ -305,7 +302,6 @@
             urls = urlStr.split('|').map(u => u.trim()); curDocId = id; curIdx = 0;
             const show = urls.length > 1 ? 'flex' : 'none';
             
-            // 🟢 โชว์เมนูเปลี่ยนหน้าด้านล่าง
             document.getElementById('bottomPagination').style.display = show;
             document.getElementById('btnThumb').style.display = show;
             
@@ -317,7 +313,6 @@
             globalUndo = []; globalRedo = [];
             await createPage(urls[curIdx], curIdx);
             
-            // 🟢 อัปเดตตัวเลขหน้าด้านล่าง
             document.getElementById('pageIndicator').innerText = `${curIdx + 1} / ${urls.length}`;
             
             const isFirst = curIdx === 0;
@@ -360,7 +355,7 @@
             });
         }
 
-        // 🟢 เพิ่มระบบป้องกันการวาดทะลุไปโดนเมนูด้านล่าง
+        // 🟢 ปรับระบบกันขีดเขียนทะลุปุ่มด้านล่าง แม้ตอนที่เมนูหลักถูกซ่อนอยู่
         function isProtectedZone(x, y) {
             const tb = document.getElementById('mainToolbar');
             if (!menuHidden && tb) { 
@@ -373,7 +368,8 @@
                 if (x >= r.left - 30 && y >= r.top - 30) return true; 
             }
             const bp = document.getElementById('bottomPagination');
-            if (!menuHidden && bp && bp.style.display !== 'none') {
+            // เอาเงื่อนไข !menuHidden ออก เพื่อให้กันเขียนทะลุปุ่มเปลี่ยนหน้าตลอดเวลา
+            if (bp && bp.style.display !== 'none') {
                 const r = bp.getBoundingClientRect();
                 if (x >= r.left - 30 && x <= r.right + 30 && y >= r.top - 30) return true;
             }
