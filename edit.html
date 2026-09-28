@@ -53,7 +53,7 @@
         .fab { width: 50px; height: 50px; border-radius: 25px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid var(--border); box-shadow: 0 8px 24px rgba(0,0,0,0.1); font-size: 20px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s; }
         .fab:active:not(:disabled) { transform: scale(0.85); }
         
-        /* 🟢 Bottom Pagination (Center) */
+        /* Bottom Pagination (Center) */
         .bottom-pagination {
             position: fixed;
             bottom: 24px;
@@ -154,15 +154,16 @@
         </div>
     </div>
 
-    <!-- 🟢 กล่องเปลี่ยนหน้าลอยตัว (ตรงกลางด้านล่าง) -->
+    <!-- กล่องเปลี่ยนหน้าลอยตัว (ตรงกลางด้านล่าง) -->
     <div class="bottom-pagination" id="bottomPagination" style="display: none;" onpointerdown="window.lockDrawing(500); event.stopPropagation()" onpointermove="event.stopPropagation()">
         <button class="btn btn-icon" id="btnPrevPage" onclick="prevPage()">◀</button>
         <span class="page-indicator" id="pageIndicator" onclick="promptJumpPage()">1 / 1</span>
         <button class="btn btn-icon" id="btnNextPage" onclick="nextPage()">▶</button>
     </div>
 
-    <!-- ปุ่มลอยมุมขวาล่าง -->
+    <!-- ปุ่มลอยมุมขวาล่าง 🟢 (เพิ่มปุ่ม 1:1 ไว้ด้านซ้ายสุดของกลุ่ม) -->
     <div class="fab-container" onpointerdown="window.lockDrawing(500); event.stopPropagation()" onpointermove="event.stopPropagation()">
+        <button class="fab" onclick="window.resetZoom()" title="คืนค่าซูม" style="font-size: 15px; font-weight: 700;">1:1</button>
         <button class="fab" id="btnThumb" onclick="openThumbnailModal()" style="display: none;">🎛️</button>
         <button class="fab" onclick="toggleMenu()"><span id="toggleIcon">🔽</span></button>
     </div>
@@ -320,8 +321,9 @@
             window.lockDrawing(500);
         }
 
-        window.prevPage = async () => { if(curIdx > 0) { await saveCvs(); curIdx--; window.resetZoom(); renderPage(); } };
-        window.nextPage = async () => { if(curIdx < urls.length - 1) { await saveCvs(); curIdx++; window.resetZoom(); renderPage(); } };
+        // 🟢 เอา window.resetZoom() ออกจากฟังก์ชันเปลี่ยนหน้าทั้งหมด
+        window.prevPage = async () => { if(curIdx > 0) { await saveCvs(); curIdx--; renderPage(); } };
+        window.nextPage = async () => { if(curIdx < urls.length - 1) { await saveCvs(); curIdx++; renderPage(); } };
         
         async function saveCvs() {
             const cvs = document.getElementById(`cvs-${curIdx}`);
@@ -440,17 +442,19 @@
             window.lockDrawing(500);
             const g = document.getElementById('thumbnailGrid'); g.innerHTML = '';
             urls.forEach((u, i) => {
+                // 🟢 เอา window.resetZoom() ออก
                 const d = document.createElement('div'); d.className = `thumb-item ${i === curIdx ? 'active' : ''}`;
-                d.onclick = async () => { closeThumbnailModal(); if (i !== curIdx) { await saveCvs(); curIdx = i; window.resetZoom(); renderPage(); } };
+                d.onclick = async () => { closeThumbnailModal(); if (i !== curIdx) { await saveCvs(); curIdx = i; renderPage(); } };
                 d.innerHTML = `<img src="${u}" loading="lazy"><div class="thumb-num">หน้า ${i + 1}</div>`; g.appendChild(d);
             });
             document.getElementById('thumbnailModal').style.display = 'flex';
         };
         window.closeThumbnailModal = () => document.getElementById('thumbnailModal').style.display = 'none';
         
+        // 🟢 เอา window.resetZoom() ออก
         window.promptJumpPage = () => {
             const p = prompt(`ไปที่หน้า (1-${urls.length}):`, curIdx + 1);
-            if (p) { const t = parseInt(p) - 1; if (t >= 0 && t < urls.length && t !== curIdx) { saveCvs().then(() => { curIdx = t; window.resetZoom(); renderPage(); }); } }
+            if (p) { const t = parseInt(p) - 1; if (t >= 0 && t < urls.length && t !== curIdx) { saveCvs().then(() => { curIdx = t; renderPage(); }); } }
         };
         
         window.openExportModal = () => { window.lockDrawing(500); document.getElementById('exportModal').style.display = 'flex'; }
